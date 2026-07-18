@@ -31,6 +31,11 @@ parameters, and running:
 snakemake -s /PATH/TO/pipeline/process_reads/processing.snakefile --configfile config_processing.yaml --jobs 32 --cores 32 -k
 ```
 
+Don't have 400G+ free for CADD? Use `config_call_bam_GATK_local.yaml` /
+`config_call_bam_GATK_germline_local.yaml` instead - see [manual/requirements.md](manual/requirements.md)
+for what that trades off, or [cloud/gcp/README.md](cloud/gcp/README.md) to run the full
+pipeline on a GCP VM instead of locally.
+
 ## User Manual
 1. [Installation requirements](manual/requirements.md)
 2. [Sequence read QC and alignment](manual/processing.md)
@@ -43,5 +48,6 @@ snakemake -s /PATH/TO/pipeline/process_reads/processing.snakefile --configfile c
 - `process_reads/` - read QC, trimming, and alignment pipeline
 - `envs/` - conda/mamba environment definitions
 - `manual/` - detailed docs for each pipeline stage
+- `cloud/gcp/` - scripts to run the full pipeline on a GCP VM (see [cloud/gcp/README.md](cloud/gcp/README.md))
 - `archive/` - historical, project-specific analyses and superseded code, kept for reference only
   (not maintained, not guaranteed to run) - see [archive/README.md](archive/README.md)
