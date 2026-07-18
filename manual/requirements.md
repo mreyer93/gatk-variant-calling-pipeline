@@ -22,20 +22,25 @@ conda activate gatk-pipeline
 ```
 
 You also need the reference databases used by this pipeline available on your machine. The
-pipeline targets **GRCh38**. None of these are bundled with this repo - download them per
-project:
- - Human genome reference fasta, GRCh38, contigs named `chr1` etc. (the standard analysis-set
-   fasta already uses this naming). Broad resource bundle:
-   `gs://gcp-public-data--broad-references/hg38/v0/Homo_sapiens_assembly38.fasta`
- - A BED file of your project's capture-panel targets (or a whole-genome/whole-exome target file -
-   see the comment in `config_call_bam_GATK.yaml` for how to generate one) - there is no default,
-   since a different project may use a different panel.
- - dbSNP and gnomAD resources - see the comments in `call_bam_GATK/config_call_bam_GATK.yaml` for
-   the specific files and where to get them (Broad's public GATK resource bundles).
+pipeline targets **GRCh38**. None of these are bundled with this repo (they don't belong in git -
+see below) - download them per machine/project with:
+```
+./scripts/download_references.sh references/
+```
+This fetches the GRCh38 fasta (+ index/dict), dbSNP, gnomAD af-only sites, and the FACETS common-SNP
+file (~17G total) from Broad's public resource buckets into a local `references/` directory, which
+is already excluded via `.gitignore` - these files are too large for version control and are
+reused across projects, not committed per-repo. Run `./scripts/download_references.sh --dry-run`
+first to see the download plan and sizes without fetching anything.
+
+That script does **not** cover two things that aren't simple file downloads:
  - Funcotator data sources: run `gatk FuncotatorDataSourceDownloader --germline --hg38
    --validate-integrity --extract-after-download` (add `--somatic` too if you want the somatic
    data sources) rather than hardcoding a path - GATK 4.6.2 moved the hosting location for these,
    so a pinned URL/path is likely to go stale.
+ - A BED file of your project's capture-panel targets (or a whole-genome/whole-exome target file -
+   see the comment in `config_call_bam_GATK.yaml` for how to generate one) - there is no default,
+   since a different project may use a different panel.
 
 #### Install CADD scripts and download databases
 CADD (v1.6+, which supports GRCh38) is used for variant deleteriousness scoring. The databases are
