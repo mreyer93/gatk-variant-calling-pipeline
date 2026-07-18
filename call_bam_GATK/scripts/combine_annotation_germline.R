@@ -1,9 +1,14 @@
 # combine annotations with a filtered VCF file to produce a final report
 
 # if launched from snakemake set args here
+# cadd.input.f and am.input.f are each optional - CADD and AlphaMissense annotation are
+# both toggled independently via config (skip_cadd, alphamissense_file). AlphaMissense
+# only scores missense SNVs - indels/nonsense/splice/non-coding variants will have NA
+# in the AM_pathogenicity/AM_class columns even when it's enabled.
 if (exists('snakemake')) {
     vcf.input.f <- snakemake@input[['vcf_funcotator']]
-    cadd.input.f <- snakemake@input[['vcf_cadd']]
+    cadd.input.f <- if (length(snakemake@input[['vcf_cadd']]) > 0) snakemake@input[['vcf_cadd']] else NULL
+    am.input.f <- if (length(snakemake@input[['vcf_alphamissense']]) > 0) snakemake@input[['vcf_alphamissense']] else NULL
     vcf.output.f <- snakemake@output[['vcf']]
     depth.min <- snakemake@params[['filter_min_dp']]
 
@@ -15,6 +20,7 @@ if (exists('snakemake')) {
     }
     vcf.input.f <- args[1]
     cadd.input.f <- args[2]
+    am.input.f <- NULL
     vcf.output.f <- args[3]
     depth.min <- 5
 }
@@ -118,16 +124,32 @@ if(nrow(vcf)==0){
     vcf.func <- cbind(vcf[, c('CHROM', 'POS', 'REF', 'ALT', 'FILTER')], funcotation.df.keep)
     # rm(vcf)
     
-    # get CADD score information
-    cadd <- read.table(cadd.input.f, sep='\t', quote='', comment.char = '', header = T, fill=T, skip = 1)
-    colnames(cadd)[1] <- 'CHROM'
-    # unique names for cadd variants and other variants
-    cadd$uniq.var <- paste(gsub('chr', '', cadd$CHROM), cadd$Pos, cadd$Ref, cadd$Alt, sep='_')
-    # remove duplicates here because all I care about is the phred score
-    cadd <- cadd[!duplicated(cadd$uniq.var), ]
-    rownames(cadd) <- cadd$uniq.var
     vcf.uniq.var <- paste(gsub('chr', '', vcf.func$CHROM), vcf.func$POS, vcf.func$REF, vcf.func$ALT, sep='_')
-    vcf.func$CADD_phred <- cadd[vcf.uniq.var, "PHRED"]
+
+    # get CADD score information, if CADD annotation was run
+    if (!is.null(cadd.input.f)) {
+        cadd <- read.table(cadd.input.f, sep='\t', quote='', comment.char = '', header = T, fill=T, skip = 1)
+        colnames(cadd)[1] <- 'CHROM'
+        # unique names for cadd variants and other variants
+        cadd$uniq.var <- paste(gsub('chr', '', cadd$CHROM), cadd$Pos, cadd$Ref, cadd$Alt, sep='_')
+        # remove duplicates here because all I care about is the phred score
+        cadd <- cadd[!duplicated(cadd$uniq.var), ]
+        rownames(cadd) <- cadd$uniq.var
+        vcf.func$CADD_phred <- cadd[vcf.uniq.var, "PHRED"]
+    }
+
+    # get AlphaMissense score information, if AlphaMissense annotation was run.
+    # Note: AlphaMissense only scores missense SNVs, so indels/nonsense/splice/non-coding
+    # variants will be NA here even when this ran.
+    if (!is.null(am.input.f)) {
+        am <- read.table(am.input.f, sep='\t', quote='', comment.char = '', header = T, fill=T)
+        # multiple transcripts can give multiple predictions per site - keep the first
+        am$uniq.var <- paste(gsub('chr', '', am$CHROM), am$POS, am$REF, am$ALT, sep='_')
+        am <- am[!duplicated(am$uniq.var), ]
+        rownames(am) <- am$uniq.var
+        vcf.func$AM_pathogenicity <- am[vcf.uniq.var, "am_pathogenicity"]
+        vcf.func$AM_class <- am[vcf.uniq.var, "am_class"]
+    }
 
     # add sample GT
     vcf.func.gt <- cbind(vcf.func, rowSums(gt.mat.simple >0, na.rm=T))

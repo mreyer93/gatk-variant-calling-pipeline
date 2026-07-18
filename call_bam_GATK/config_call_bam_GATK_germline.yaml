@@ -16,6 +16,16 @@ bam_metadata: 'bam_input.tsv'
 # min total depth to keep a variant, applied in the annotation step
 filter_min_dp: 5
 
+# CADD's database is 400G+ and won't fit on every machine. Set this to True to skip
+# CADD annotation - see config_call_bam_GATK_germline_local.yaml for a ready-to-use
+# local config that does this and substitutes the much smaller (~640M) AlphaMissense
+# germline missense score instead (see alphamissense_file below and manual/germline.md).
+# skip_cadd: False
+# path to the AlphaMissense_hg38.tsv.gz score file (tabix-indexed) - see
+# scripts/download_references.sh --with-alphamissense. Only used if set to a non-empty
+# path; only scores missense SNVs (no indels/nonsense/splice/non-coding coverage).
+# alphamissense_file: '/path/to/data/references/AlphaMissense_hg38.tsv.gz'
+
 ################################################################################
 ### REFERENCES AND DATABASES ###################################################
 ################################################################################

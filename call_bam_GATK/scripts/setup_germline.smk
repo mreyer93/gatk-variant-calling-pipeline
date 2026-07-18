@@ -13,8 +13,10 @@ outdir = config['output_directory']
 REF_FILE = config['REF_FILE']
 dbsnp_file =config['dbsnp_file']
 dbsnp_common_file =config['dbsnp_common_file']
-# genome version for CADD scoring
-genome_version = config['genome_version'] 
+# genome version for CADD scoring (CADD uses GRCh37/GRCh38 naming directly)
+genome_version = config['genome_version']
+# Funcotator uses UCSC-style hg19/hg38 naming instead of GRCh37/GRCh38
+funcotator_ref_version = {'GRCh37': 'hg19', 'GRCh38': 'hg38'}[genome_version]
 # targets with 100bp windows for mutation calling
 if 'target_bed_w100' in config:
     targets = config['target_bed_w100']
@@ -52,6 +54,15 @@ if not('skip_annotation' in config):
     config['skip_annotation'] = False
 if not('final_bam' in config):
     config['final_bam'] = False
+# skip_cadd: skip the CADD annotation step (its 400G+ database isn't always available,
+# e.g. on smaller local machines). AlphaMissense is a much lighter-weight (~640M) germline
+# missense deleteriousness score that can run instead if alphamissense_file is set - see
+# manual/germline.md. Unlike CADD it only covers missense SNVs, not indels/nonsense/splice/
+# non-coding variants, so those will have no deleteriousness annotation in that mode.
+if not('skip_cadd' in config):
+    config['skip_cadd'] = False
+if not('alphamissense_file' in config):
+    config['alphamissense_file'] = ''
 # determine final bam for variant calling based on config 
 def get_final_bam(sample):
     if config['skip_bqsr']:

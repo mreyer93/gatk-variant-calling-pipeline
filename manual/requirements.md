@@ -49,3 +49,18 @@ created and activated, you will have access to the `cadd.sh` and `cadd-install.s
 `cadd-install.sh` and install the databases you need (answer "no" to the first question, which
 asks about installing a separate CADD conda environment - you already have one). You will need to
 do this before running the pipeline all the way through.
+
+#### Running on a machine without room for CADD
+If you don't have 400G+ free (most laptops don't), use `config_call_bam_GATK_germline_local.yaml` /
+`config_call_bam_GATK_local.yaml` instead of the full configs - see
+[manual/germline.md](germline.md) and [manual/somatic.md](somatic.md) for what each one trades
+off. The germline local config needs the AlphaMissense score file instead of CADD:
+```
+./scripts/download_references.sh --with-alphamissense references/
+```
+This adds `AlphaMissense_hg38.tsv.gz` (~640M, tabix-indexed automatically) to the same download
+plan described above.
+
+Also size your `--jobs`/`--cores` snakemake flags to your actual CPU (`sysctl -n hw.ncpu` on
+macOS, `nproc` on Linux) rather than the 32 in the example commands - oversubscribing a 4-core
+laptop with `--jobs 32` won't make it faster, just more likely to thrash.

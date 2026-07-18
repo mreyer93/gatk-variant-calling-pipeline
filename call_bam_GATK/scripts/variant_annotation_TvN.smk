@@ -65,7 +65,7 @@ rule funcotator_TvN:
         gatk Funcotator \
             --variant {input.vcf} \
             --reference {input.ref} \
-            --ref-version hg19 \
+            --ref-version {funcotator_ref_version} \
             --data-sources-path {params.funcotator_data_path}  \
             --output {output.vcf} \
             --output-file-format VCF

@@ -14,9 +14,9 @@ rule CADD_reference:
         sed "s/^chr//g" {input} > {params.tmpfile}
         if ! command -v CADD.sh &> /dev/null
         then
-            cadd.sh -a -c {threads} -g GRCh37 -o {output} {params.tmpfile}
+            cadd.sh -a -c {threads} -g {genome_version} -o {output} {params.tmpfile}
         else
-            CADD.sh -a -c {threads} -g GRCh37 -o {output} {params.tmpfile}
+            CADD.sh -a -c {threads} -g {genome_version} -o {output} {params.tmpfile}
         fi
 
         rm {params.tmpfile}
@@ -70,7 +70,7 @@ rule funcotator_reference:
         gatk Funcotator \
             --variant {input.vcf} \
             --reference {input.ref} \
-            --ref-version hg19 \
+            --ref-version {funcotator_ref_version} \
             --data-sources-path {params.funcotator_data_path}  \
             --output {output.vcf} \
             --output-file-format VCF

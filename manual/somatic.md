@@ -23,11 +23,24 @@ Reference files, the capture-panel target BED, and annotation directories must b
 
 Mutect2 is run with `--germline-resource` pointed at the gnomAD resource in the config, to help distinguish somatic from germline calls, and orientation-bias correction (`LearnReadOrientationModel`/`--ob-priors`) is applied on both the tumor-vs-reference and tumor-vs-normal paths. There is no panel-of-normals (PoN) support yet - if you have a cohort of matched normal samples, building and wiring in a PoN is a worthwhile follow-on improvement for more accurate somatic filtering.
 
+##### Running without CADD (e.g. on a laptop)
+CADD's database is 400G+, which won't fit on most local machines. Unlike the germline
+pipeline, there's no lightweight substitute here: the "new score" ranking below multiplies
+CADD's score by AF and fold-change, and the `filtered` output requires a CADD score to be
+present at all. AlphaMissense (used as CADD's local substitute in the germline pipeline) only
+scores missense SNVs, so swapping it in here would silently drop every indel, nonsense, and
+splice-site call from the scored/filtered output - often the clinically important calls in a
+cancer gene panel. That's worse than just not scoring locally. Set `skip_annotation: True`
+instead (`config_call_bam_GATK_local.yaml` is set up this way) to get variant calls, filtering,
+and FACETS without CADD/Funcotator/scoring, and run the full pipeline with CADD on a machine
+that has the disk space for it.
+
 #### Run the pipeline
 Similar to the other pipelines, you can run somatic variant calling with a command like:
 ```
 snakemake -s /PATH/TO/pipeline/call_bam_GATK/call_bam_GATK.snakefile --configfile config_call_bam_GATK.yaml --use-conda --jobs 32 --cores 32 -k 
 ```
+Lower `--jobs`/`--cores` to match your machine - e.g. `--jobs 4 --cores 4` on a 4-core laptop.
 The `--use-conda` directive specifies that specific versions of the software used in this pipeline will be downloaded for each rule that requires them. To view a summary of which steps will be executed before running the pipeline, add the `-n` flag for a dry-run.
 
 #### New score files

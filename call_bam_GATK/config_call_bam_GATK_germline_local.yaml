@@ -1,0 +1,44 @@
+# Local-machine config for the germline pipeline: skips CADD (its 400G+ database won't
+# fit on most laptops) and uses AlphaMissense instead - a ~640M, missense-SNV-only
+# deleteriousness score that's also the current ClinGen SVI-preferred predictor for
+# germline missense variant classification (ACMG PP3/BP4). See manual/germline.md for
+# the coverage tradeoff (no score for indels/nonsense/splice/non-coding variants in this
+# mode) and manual/requirements.md for disk/CPU sizing on a typical laptop.
+#
+# For a full run with CADD (broader variant-type coverage), use
+# config_call_bam_GATK_germline.yaml on a machine/VM with the disk space for it.
+
+# output directory for all files from the pipeline
+output_directory: 'output'
+annotation_only: False
+
+# metadata file: information about all the bams you want to call variants in
+# tab delimited file with the following columns (must have them all)
+# sample	bamfile
+bam_metadata: 'bam_input.tsv'
+
+# min total depth to keep a variant, applied in the annotation step
+filter_min_dp: 5
+
+# skip CADD, use AlphaMissense instead
+skip_cadd: True
+# download with: ./scripts/download_references.sh --with-alphamissense
+alphamissense_file: '/path/to/data/references/AlphaMissense_hg38.tsv.gz'
+
+################################################################################
+### REFERENCES AND DATABASES ###################################################
+################################################################################
+# REQUIRED: path to a BED file of this project's capture-panel targets, +/- 100bp, in GRCh38 coordinates
+targets: '/path/to/your/targets_w100_hg38.bed'
+genome_version: "GRCh38"
+# Broad resource bundle: gs://gcp-public-data--broad-references/hg38/v0/Homo_sapiens_assembly38.fasta
+REF_FILE: '/path/to/data/references/Homo_sapiens_assembly38.fasta'
+# path to data sources used in GATK funcotator (GRCh38 bundle). Download with:
+# gatk FuncotatorDataSourceDownloader --germline --hg38 --validate-integrity --extract-after-download
+funcotator_data_path: '/path/to/data/references/funcotator_dataSources.v1.7.20200521g/'
+# Broad resource bundle: Homo_sapiens_assembly38.dbsnp138.vcf
+dbsnp_file: '/path/to/data/references/dbsnp/Homo_sapiens_assembly38.dbsnp138.vcf.gz'
+# GATK best-practices somatic-hg38 bundle: small_exac_common_3.hg38.vcf.gz
+dbsnp_common_file: '/path/to/data/references/dbsnp/small_exac_common_3.hg38.vcf.gz'
+# GATK best-practices somatic-hg38 bundle: af-only-gnomad.hg38.vcf.gz
+gnomad_file: '/path/to/data/references/af-only-gnomad.hg38.vcf.gz'

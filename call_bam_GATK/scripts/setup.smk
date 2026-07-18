@@ -20,8 +20,10 @@ if 'targets_depth' in config:
     targets_depth = config['targets_depth']
 else:
     targets_depth = target_bed_w100
-# genome version for CADD scoring
-genome_version = config['genome_version'] 
+# genome version for CADD scoring (CADD uses GRCh37/GRCh38 naming directly)
+genome_version = config['genome_version']
+# Funcotator uses UCSC-style hg19/hg38 naming instead of GRCh37/GRCh38
+funcotator_ref_version = {'GRCh37': 'hg19', 'GRCh38': 'hg38'}[genome_version]
 
 metadata = pd.read_csv(config["bam_metadata"], delimiter = '\t',index_col=False)
 req_columns = ['sample', 'bamfile', 'patient', 'timepoint', 'tumor_normal', 'library', 'platform', 'platform_unit']
