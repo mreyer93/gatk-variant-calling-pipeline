@@ -1,0 +1,27 @@
+# configuration file for the sequence processing pipeline
+
+# output directory
+output_directory: 'output'
+
+# sample_file: Three column, TAB DELIMITED file with sample names and read pairs
+# Example:
+# SAMPLE_1  READ_1.fq.gz  READ_2.fq.gz
+sample_file: 'sample_reads_short.tsv'
+# length of paired end reads
+read_length: 150
+
+# specify parameters for TrimGalore -- automatically chcecks the adapter type
+trim_galore:
+  quality:  20    # Min quality before trimming, 20 is default value
+  min_read_length: 30   # this is dependent on the technology used, most NGS is 100-150 so min of 30 is generous for throwing out reads
+
+# Reference build: GRCh38. The standard GRCh38 analysis-set fasta already uses
+# 'chr'-prefixed contigs (unlike GRCh37/hg19, which needed separate chr/no-chr
+# variants) - use the same fasta here as in call_bam_GATK's REF_FILE.
+# Broad resource bundle: gs://gcp-public-data--broad-references/hg38/v0/Homo_sapiens_assembly38.fasta
+reference_file: '/path/to/data/references/Homo_sapiens_assembly38.fasta'
+# REQUIRED: bring your own capture-panel target BED files per project - there is
+# no default, since a different client/project may use a different panel.
+target_bed: '/path/to/your/targets_hg38.bed'
+target_bed_w100: '/path/to/your/targets_w100_hg38.bed'
+target_bed_w1000: '/path/to/your/targets_w1000_hg38.bed'

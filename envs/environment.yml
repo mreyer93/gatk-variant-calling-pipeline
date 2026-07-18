@@ -1,0 +1,37 @@
+# Conda/mamba environment for the variant-calling and read-processing pipelines.
+# Create with: mamba env create -f envs/environment.yml -n gatk-pipeline
+#
+# Versions below were current as of mid-2026 (GATK 4.6.2, samtools/bcftools/htslib
+# 1.23). Re-check with `mamba search <pkg>` periodically and bump as needed -
+# these are pinned for reproducibility, not frozen forever.
+name: gatk-pipeline
+channels:
+  - r
+  - conda-forge
+  - bioconda
+dependencies:
+  - bcftools=1.23
+  - bedtools
+  - bwa>=0.7.17
+  - cadd-scripts
+  - fastqc
+  - gatk4=4.6.2
+  - htslib=1.23
+  - multiqc
+  - pandas
+  - picard>=3.1
+  - r-base
+  - r-facets
+  - r-ggplot2
+  - r-knitr
+  - r-reshape2
+  - r-rmarkdown
+  - samtools=1.23
+  - snp-pileup>=0.6.2,<0.7.0a0
+  # Snakemake made significant CLI/workflow changes across major versions (7 -> 8 -> 9).
+  # Pinned to the 7.x line, which this pipeline has been verified against with a dry-run
+  # (snakemake -n) of both call_bam_GATK snakefiles and the process_reads snakefile.
+  # Bumping to 8.x/9.x should work for these fairly basic rule/script/conda-directive
+  # Snakefiles, but re-run a dry-run to confirm before relying on it.
+  - snakemake>=7.32,<8
+  - trim-galore

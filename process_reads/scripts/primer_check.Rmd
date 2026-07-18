@@ -1,0 +1,227 @@
+---
+title: "Targeted exon sequencing - Automated QC"
+date:  "`r format(Sys.time(), '%Y-%m-%d')`"
+output:
+  pdf_document:
+    latex_engine: tectonic
+    keep_tex: true
+---
+
+```{r setup, include=FALSE}
+options(tinytex.verbose = TRUE)
+# load libraries
+for(p in c("ggplot2", 'knitr', 'reshape2')){
+  if(!p %in% installed.packages()[,1]){
+    print(p)
+    install.packages(p, repos =  "https://cloud.r-project.org", dependencies = T )
+    library(p, character.only = TRUE)
+  }
+  library(p, character.only = TRUE)
+}
+
+# set global options
+options(datatable.fread.datatable=FALSE)
+options(stringsAsFactors = FALSE)
+
+# TESTING ARGS
+testing <- F
+if(testing){
+    # this pipeline actually just starts with sample reads
+    sample.reads.f <- '~/data/project_one/sample_reads.tsv'
+    # targets file with the probes
+    targets.w0.f <- '~/data/references/AML_261_IDT_GRCh38/xgen_aml_probes.bed'
+    # targets.old <- read.table('~/data/references/AML_261_IDT/targets_hg19.st.bed', sep='\t', header=F, quote='', col.names = c('chr', 'start', 'end', 'strand', 'exon'))
+    # targets.old$length <- targets.old$end - targets.old$start
+    outdir.server <- '/path/to/data/project_one/output'
+    outdir <- '~/data/project_one/output'
+} else {
+    # set directories
+    outdir <- snakemake@params[["outdir"]]
+    # IDT probes file
+    targets.w0.f <- snakemake@params[["target_bed"]]
+    # sample reads file
+    sample.reads.f <- snakemake@params[["sample_reads"]]
+}
+plot_output_dir <- file.path(outdir, 'QC_plots')
+if (!dir.exists(plot_output_dir)){ dir.create(plot_output_dir) }
+
+# read these files
+sample.reads <- read.table(sample.reads.f, sep='\t', header=F, quote='', col.names = c('sample', 'r1', 'r2'))
+targets.w0 <- read.table(targets.w0.f, sep='\t', header=F, quote='', col.names = c('chr', 'start', 'end', 'strand', 'exon'))
+# set up 100 and 1000 windows
+targets.w100 <- targets.w0
+targets.w100$start <- targets.w100$start - 100
+targets.w100$end <- targets.w100$end - 100
+targets.w1000 <- targets.w0
+targets.w1000$start <- targets.w1000$start - 1000
+targets.w1000$end <- targets.w1000$end - 1000
+targets.w0$length <- targets.w0$end - targets.w0$start
+targets.w100$length <- targets.w100$end - targets.w100$start
+targets.w1000$length <- targets.w1000$end - targets.w1000$start
+# sample list
+sample.list <- sample.reads$sample
+
+```
+
+## Introduction
+
+This report is an automated check on the coverage of the targeted exons, for samples processed with a targeted sequencing panel, in all samples processed in the pipeline.
+
+## Number of aligned reads
+The first metric to study is the number of reads that can be uniquely aligned to the human genome in the exons of interest. We will calculate reads that align in the exons +/- 100bp. 
+
+```{r, echo=F, message=F, warning=F, fig.width=12, fig.height=6}
+# coverage info calculated from the pipeline
+cov.dir <- file.path(outdir, '02_align/cov')
+cov.w0.files <- list.files(cov.dir, pattern='bam.w0.cov$')
+cov.w100.files <- list.files(cov.dir, pattern='bam.w100.cov$')
+
+cov.w100.list <- lapply(cov.w100.files, function(x) {
+    cov.w100 <- read.table(file.path(cov.dir, x), sep='\t', col.names = c('chr', 'start', 'end', 'strand', 'exon', 'reads', 'length', 'length.g0', 'pct.g0', 'avg.cov'))
+    return(cov.w100)
+})
+
+sample.names <- sapply(cov.w100.files, function(x) strsplit(x, split='\\.')[[1]][1])
+cov.w100.df <- cbind(targets.w100, do.call(cbind, lapply(cov.w100.list, function(x) x$avg.cov )))
+cov.w100.n.df <- cbind(targets.w100, do.call(cbind, lapply(cov.w100.list, function(x) x$reads )))
+colnames(cov.w100.df) <- c(colnames(targets.w100), sample.names)
+colnames(cov.w100.n.df) <- c(colnames(targets.w100), sample.names)
+
+# remove some rows with zero length from the GRCh37 to 38 liftover
+cov.w100.df <- cov.w100.df[cov.w100.df$length >0, ]
+nsamp <- length(cov.w100.files)
+
+# total reads aligned per sample
+total.reads.aligned <- data.frame(sample=sample.names, total.reads=colSums(cov.w100.n.df[,sample.names]))
+total.reads.plot <- ggplot(total.reads.aligned, aes(y=sample,x=total.reads)) +
+    geom_bar(stat='identity') + 
+    theme_bw() + 
+    labs(title='Count of reads aligned in exons +/- 100bp',x='# reads',y='Sample')
+total.reads.plot
+
+# calculate some basic stats
+stat.df <- data.frame('Statistic' = c('total samples', 'mean read count', 'median', 'range'),
+                      result = c(nrow(total.reads.aligned), 
+                                 round(mean(total.reads.aligned$total.reads), 0),
+                                 round(median(total.reads.aligned$total.reads), 0),
+                                 paste(round(range(total.reads.aligned$total.reads), 0), collapse=' - ')))
+kable(stat.df)
+```
+## Coverage
+We will now look at coverage in the exons +/- 100bp. We will look for any samples that have particularly low coverage, as well as any exons that appear to be problematic across multiple samples. This first plot simply shows mean and median coverage across all exons. This can be used to identify areas with systematically low coverage (indicative of poor amplification) and areas of systematically high coverage (potentially indicative of artefacts).
+
+```{r, echo=F, message=F, warning=F, fig.width=12, fig.height=6}
+# look at stats across all exons
+cov.w100.df$ALL_mean <- rowMeans(as.matrix(cov.w100.df[,sample.names]))
+cov.w100.df$ALL_median <- apply(as.matrix(cov.w100.df[,sample.names]), 1, median)
+cov.w100.df$ALL_max <- apply(as.matrix(cov.w100.df[,sample.names]), 1, max)
+cov.w100.df$ALL_min <- apply(as.matrix(cov.w100.df[,sample.names]), 1, min)
+cov.w100.df$n <- 1:nrow(cov.w100.df)
+
+# annote with the chr breaks of the exon
+chr.breaks.each <- sapply(unique(cov.w100.df$chr), function(x) sum(cov.w100.df$chr==x))
+chr.breaks <- c(0, cumsum(sapply(unique(cov.w100.df$chr), function(x) sum(cov.w100.df$chr==x))))
+chr.letters <- data.frame(letter=c(1:22, 'X'), pos=chr.breaks[1:23] + chr.breaks.each /2 )
+
+toplot <- melt(cov.w100.df[, c('n', 'ALL_mean', 'ALL_median')], id.vars = 'n')
+exon.genome.plot <- ggplot(toplot, aes(x=n, y=value)) +
+    geom_line() +
+    theme_bw() +
+    geom_vline(xintercept = chr.breaks, col='firebrick') +
+    geom_text(data=chr.letters, aes(x=pos, y=-700, label=letter), col='firebrick')+
+    facet_wrap(.~variable, nrow = 2) + 
+    labs(title='Coverage across all samples in all exons', x='Exon number', y='Coverage')
+exon.genome.plot
+ggsave(paste(format(Sys.time(), "%Y%m%d"), "coverage_exon_genome.pdf", sep="_"), 
+       plot = exon.genome.plot,
+       path = plot_output_dir,
+       width =11, height = 8, units = c("in")) 
+```
+This first table shows the exons with <50x median coverage, which may be excluded from variant analysis. The second table highlights the 10 eoxns with the highest coverage.
+
+```{r, echo=F, message=F, warning=F, fig.width=12, fig.height=6}
+# what are the lowest mean locations?
+# these are exons that are likely poor primers and under-covered in all the data
+min.median.cov <- 50
+low.cov <- cov.w100.df[cov.w100.df$ALL_median <= min.median.cov, ]
+low.cov.report <- low.cov[order(low.cov$ALL_median), c('chr', 'start', 'end', 'strand', 'exon', 'length', 'ALL_median')]
+kable(low.cov.report)
+
+high.cov.report <- cov.w100.df[order(cov.w100.df$ALL_median,decreasing = T), c('chr', 'start', 'end', 'strand', 'exon', 'length', 'ALL_median')][1:10,]
+kable(high.cov.report)
+```
+We will now look per-sample to see if there are any samples with coverage significantly lower than the rest. This boxplot shows coverage across all exons for each sample. If any samples are outliers, with mean coverage greater or less than the mean +/- two standard deviations, they will be printed below. 
+
+```{r, echo=F, message=F, warning=F, fig.width=12, fig.height=6}
+# coverage across all boxplot
+cov.w100.boxplot.melt <- melt(cov.w100.df[,sample.names])
+cov.w100.boxplot <- ggplot(cov.w100.boxplot.melt, aes(x=variable, y=value)) +
+    geom_boxplot() +
+    theme_bw()+
+    coord_flip() +
+    labs(title='Average coverage of each exon in each sample',
+         y='Exon average coverage', x='sample')
+cov.w100.boxplot
+ggsave(paste(format(Sys.time(), "%Y%m%d"), "coverage_w100_boxplot.pdf", sep="_"), 
+       plot = cov.w100.boxplot,
+       path = plot_output_dir,
+       width = 8, height = 11, units = c("in")) 
+# 
+# # if we ignore the problem exons highlighted above
+# cov.w100.boxplot.melt.filt <- melt(cov.w100.df[!(cov.w100.df$exon %in% low.cov.report$exon), sample.names])
+# ggplot(cov.w100.boxplot.melt.filt, aes(x=variable, y=value)) +
+#     geom_boxplot() +
+#     theme_bw()+
+#     coord_flip() +
+#     labs(title='Average coverage of each exon in each sample', subtitle = 'Filtered to remove problem exons highlighted above',
+#          y='Exon average coverage', x='sample')
+
+# do any samples fall 2sd or more below or above the mean
+cm <- colMeans(cov.w100.df[,sample.names])
+sample.cov.mean <- mean(cm)
+sample.cov.sd <- sd(cm)
+show.low.val <- sample.cov.mean - (2*sample.cov.sd)
+show.high.val <- sample.cov.mean + (2*sample.cov.sd)
+show.low.samps <- which(cm <= show.low.val)
+show.high.samps <- which(cm >= show.high.val)
+
+```
+`r sum(cm <= show.low.val)` sample(s) that have less than the mean -2 sd coverage: `r show.low.samps`
+`r sum(cm >= show.high.val)` sample(s) that have less than the mean -2 sd coverage: `r show.high.samps`
+
+## Offtarget mapping
+Next, we will calculate the number of reads that map to offtarget locations, greater than 1000bp from the targeted exons. We would like this to be a low fraction of total reads. 
+
+```{r, echo=F, message=F, warning=F, fig.width=12, fig.height=6}
+# do something with the flagstats offtarget files
+off.dir <- file.path(outdir, '02_align/offtarget')
+off.files <- list.files(off.dir, pattern='flagstat$')
+
+# read these
+off.list <- lapply(off.files, function(x) {
+    # print(x)
+    as.integer(read.table(file.path(off.dir,x), sep=' ', header=F, fill=T)[,1][2:14])
+})
+off.df <- do.call(cbind, off.list)
+colnames(off.df) <- sample.names
+rownames(off.df) <- c("total", "secondary", "supplementary", "duplicates", "mapped", "paired", "read1", "read2", "properly.paired", "itself.and.mate.mapped", "singletons", "mate.mapped.to.a.different.chr", "mate.mapped.to.a.different.chr.mapQ.5")
+
+total.reads.aligned$offtarget <- off.df["paired", total.reads.aligned$sample]
+total.reads.aligned$offtarget.frac <- total.reads.aligned$offtarget / total.reads.aligned$total.reads
+total.reads.off.plot <- melt(total.reads.aligned)
+offtarget.barplot <- ggplot(total.reads.off.plot[total.reads.off.plot$variable %in% c('total.reads', 'offtarget'),],
+       aes(x=value, y=sample, fill=variable)) +
+    geom_bar(stat='identity') + 
+    scale_fill_manual(name='', 
+                      labels=c('On-target reads', 'Off-target reads'), 
+                      values = c('steelblue', 'firebrick')) + 
+    theme_bw() +
+    labs(title='On-target vs off-target reads',
+         x='# reads',y='Sample')
+offtarget.barplot
+ggsave(paste(format(Sys.time(), "%Y%m%d"), "offtarget_read_barplot.pdf", sep="_"), 
+       plot = offtarget.barplot,
+       path = plot_output_dir,
+       width = 8, height = 11, units = c("in")) 
+
+```

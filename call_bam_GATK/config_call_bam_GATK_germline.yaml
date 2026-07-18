@@ -1,0 +1,47 @@
+# configfile for the call_bam_GATK germline pipeline
+
+# output directory for all files from the pipeline
+output_directory: 'output'
+# should variant calling be skipped, only running the annotation steps?
+# This is useful when you want to change something about the annotation steps
+# requires all result files to be in the exact place from running the pipeline previously
+annotation_only: False
+
+# metadata file: information about all the bams you want to call variants in
+# tab delimited file with the following columns (must have them all)
+# sample	bamfile
+# if information is missing, put all values of that column with a dummy variable
+bam_metadata: 'bam_input.tsv'
+
+# min total depth to keep a variant, applied in the annotation step
+filter_min_dp: 5
+
+################################################################################
+### REFERENCES AND DATABASES ###################################################
+################################################################################
+# Reference build: GRCh38. Bring your own capture-panel targets per project -
+# there is no default target file, since a different client/project may use a
+# different panel (or whole-exome/whole-genome).
+#
+# targets with 100bp windows for mutation calling
+#    to DISABLE all window filtering, download this file of chromosome sizes
+#    and use it instead of your panel's targets
+#    curl http://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.chrom.sizes | awk 'BEGIN {FS=OFS="\t"} {print $1,1,$2}' | grep -v "_" | grep -v "chrM" | grep -v "chrY" | sort -V > targets_whole_genome.bed
+# REQUIRED: path to a BED file of this project's capture-panel targets, +/- 100bp, in GRCh38 coordinates
+targets: '/path/to/your/targets_w100_hg38.bed'
+# Genome version for CADD scoring. CADD v1.6+ supports GRCh38 (use -g GRCh38 with CADD.sh)
+genome_version: "GRCh38"
+# reference: GRCh38 primary/no-alt analysis set fasta, contigs named 'chr1', 'chr2', etc.
+# Broad resource bundle: gs://gcp-public-data--broad-references/hg38/v0/Homo_sapiens_assembly38.fasta
+REF_FILE: '/path/to/data/references/Homo_sapiens_assembly38.fasta'
+# path to data sources used in GATK funcotator (GRCh38 bundle - filenames ending in a lowercase 'g',
+# e.g. funcotator_dataSources.v1.7.20200521g). Download with: gatk FuncotatorDataSourceDownloader --germline --hg38
+funcotator_data_path: '/path/to/data/references/funcotator_dataSources.v1.7.20200521g/'
+# dbsnp file - used with BQSR. Broad resource bundle: Homo_sapiens_assembly38.dbsnp138.vcf
+dbsnp_file: '/path/to/data/references/dbsnp/Homo_sapiens_assembly38.dbsnp138.vcf.gz'
+# dbsnp common file - used with facets (common biallelic SNP sites for pileup).
+# GATK best-practices somatic-hg38 bundle: small_exac_common_3.hg38.vcf.gz
+dbsnp_common_file: '/path/to/data/references/dbsnp/small_exac_common_3.hg38.vcf.gz'
+# gnomad file: sites of common polymorphisms, used as the Mutect2 germline resource.
+# GATK best-practices somatic-hg38 bundle: af-only-gnomad.hg38.vcf.gz
+gnomad_file: '/path/to/data/references/af-only-gnomad.hg38.vcf.gz'
