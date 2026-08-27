@@ -123,7 +123,14 @@ if not('skip_bqsr' in config):
     config['skip_bqsr'] = False
 if not('skip_annotation' in config):
     config['skip_annotation'] = False
-# determine final bam for variant calling based on config 
+# make_report: build the client-facing summary report (see scripts/report.smk).
+# report_pdf additionally renders a PDF alongside the HTML - it needs a working LaTeX
+# toolchain (tectonic, from envs/rmarkdown.yml), so it's separately toggleable.
+if not('make_report' in config):
+    config['make_report'] = True
+if not('report_pdf' in config):
+    config['report_pdf'] = True
+# determine final bam for variant calling based on config
 def get_final_bam(sample):
     if config['skip_bqsr']:
         final_bam = join(outdir, '01_prepare_bam/add_readgroups/{sample}.fixchr.bam')

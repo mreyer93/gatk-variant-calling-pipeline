@@ -1,0 +1,384 @@
+---
+title: "`r params$project_name`"
+subtitle: "Somatic variant calling report"
+date: "`r format(Sys.time(), '%Y-%m-%d')`"
+params:
+  project_name: "Somatic variant analysis"
+  outdir: "output"
+  metadata: ""
+  scripts_dir: "."
+  genome_version: "GRCh38"
+  filter_min_af: 0.02
+  filter_min_dp: 5
+  filter_min_cadd: 20
+  filter_gatk: "PASS"
+  top_n: 40
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    self_contained: true
+    theme: flatly
+    df_print: kable
+  pdf_document:
+    toc: true
+    toc_depth: 2
+    latex_engine: tectonic
+    keep_tex: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE,
+                      fig.width = 9, fig.height = 4.5, dpi = 150)
+suppressPackageStartupMessages({
+    library(ggplot2)
+    library(data.table)
+    library(knitr)
+})
+source(file.path(params$scripts_dir, "report_helpers.R"))
+
+outdir <- params$outdir
+ref_dir    <- file.path(outdir, "02_variants_reference")
+annot_dir  <- file.path(ref_dir, "02_variant_annotations/annotations_combined/filtered")
+called_dir <- file.path(ref_dir, "01_gatk_variant_calling/filtered")
+scores_dir <- file.path(ref_dir, "03_variant_new_scores/final/filtered")
+tvn_dir    <- file.path(outdir, "03_variants_TvN/01_gatk_variant_calling/filtered")
+contam_dir <- file.path(outdir, "01_prepare_bam/CalculateContamination")
+depth_file <- file.path(outdir, "01_prepare_bam/depth_smoothed_join.tsv")
+facets_dir <- file.path(outdir, "04_FACETS")
+
+variants  <- load_annotated_variants(annot_dir)
+scores    <- load_new_scores(scores_dir)
+vcf_counts<- load_vcf_counts(called_dir)
+tvn_counts<- load_vcf_counts(tvn_dir)
+contam    <- load_contamination(contam_dir)
+depth     <- load_depth_summary(depth_file)
+purity    <- load_facets_purity(facets_dir)
+
+metadata <- NULL
+if (nzchar(params$metadata) && file.exists(params$metadata)) {
+    metadata <- tryCatch(
+        data.table::fread(params$metadata, sep = "\t", showProgress = FALSE),
+        error = function(e) NULL)
+}
+
+annotated_mode <- !is.null(variants)
+
+# Summary tables are also written to disk so they can be opened in Excel / re-used
+# downstream without re-running anything.
+summary_dir <- file.path(outdir, "09_report", "summary_tables")
+dir.create(summary_dir, recursive = TRUE, showWarnings = FALSE)
+write_summary <- function(dt, name) {
+    if (is.null(dt) || nrow(dt) == 0) return(invisible(NULL))
+    data.table::fwrite(dt, file.path(summary_dir, paste0(name, ".tsv")), sep = "\t")
+}
+```
+
+# Overview
+
+```{r overview}
+n_samples <- if (!is.null(metadata) && "sample" %in% names(metadata)) {
+    length(unique(metadata$sample))
+} else if (!is.null(vcf_counts)) nrow(vcf_counts) else NA_integer_
+
+n_patients <- if (!is.null(metadata) && "patient" %in% names(metadata)) {
+    length(unique(metadata$patient))
+} else NA_integer_
+
+n_tumor <- n_normal <- NA_integer_
+if (!is.null(metadata) && "tumor_normal" %in% names(metadata)) {
+    n_tumor  <- sum(metadata$tumor_normal %in% c("T", "tumor", "Tumor"))
+    n_normal <- sum(metadata$tumor_normal %in% c("N", "normal", "Normal"))
+}
+
+overview <- data.table(
+    Item = c("Samples analysed", "Patients", "Tumour samples", "Normal samples",
+             "Reference build", "Variant annotation",
+             "Min allele fraction", "Min depth", "Min CADD"),
+    Value = c(as.character(n_samples), as.character(n_patients),
+              as.character(n_tumor), as.character(n_normal),
+              params$genome_version,
+              if (annotated_mode) "CADD + Funcotator" else "not run (calling only)",
+              as.character(params$filter_min_af), as.character(params$filter_min_dp),
+              as.character(params$filter_min_cadd))
+)
+overview <- overview[!is.na(Value) & Value != "NA"]
+kable(overview, caption = "Run configuration")
+write_summary(overview, "run_overview")
+```
+
+Variants were called with GATK Mutect2 against the reference genome for every sample, and
+additionally in matched tumour-vs-normal mode wherever a patient/timepoint had both a
+tumour and a normal sample. Calls shown below have GATK's own filters applied; the
+"filtered" set additionally requires the allele-fraction, depth
+`r if (annotated_mode) "and CADD" else ""` thresholds listed above.
+
+`r if (!annotated_mode) "**Note:** this run was executed without the annotation stage, so gene-level, functional-consequence, and deleteriousness sections are omitted. Variant counts and QC below are still complete."`
+
+# Sequencing quality control
+
+## Coverage depth
+
+```{r depth}
+if (is.null(depth)) {
+    note_missing("Per-sample depth")
+} else {
+    write_summary(depth, "depth_per_sample")
+    kable(depth[order(mean_depth)],
+          digits = 1,
+          col.names = c("Sample", "Mean depth", "Median depth", "Fraction of targets <50x"),
+          caption = "On-target sequencing depth per sample")
+}
+```
+
+```{r depth-plot, fig.height=3.6}
+if (!is.null(depth)) {
+    ggplot(depth, aes(x = reorder(sample, mean_depth), y = mean_depth)) +
+        geom_col(fill = REPORT_PALETTE[1]) +
+        coord_flip() +
+        labs(title = "Mean on-target depth by sample", x = NULL, y = "Mean depth (x)") +
+        report_theme()
+}
+```
+
+`r if (!is.null(depth)) "Samples with low mean depth, or a high fraction of targets below 50x, will have reduced sensitivity for low-allele-fraction variants. Interpret an absence of calls in those samples with caution."`
+
+## Tumour-in-normal contamination
+
+```{r contamination}
+if (is.null(contam)) {
+    note_missing("Contamination estimates (requires matched normals)")
+} else {
+    write_summary(contam, "contamination")
+    kable(contam[order(-contamination)], digits = 4,
+          col.names = c("Sample", "Contamination", "Std. error"),
+          caption = "GATK CalculateContamination estimates")
+}
+```
+
+`r if (!is.null(contam)) "Contamination estimates above roughly 0.05 suggest tumour content in the matched normal (or cross-sample contamination), which can cause true somatic variants to be filtered out as germline. These are already used by FilterMutectCalls."`
+
+# Variant summary
+
+## Variants per sample
+
+```{r variant-counts}
+counts <- NULL
+if (annotated_mode) {
+    counts <- variants[, .(n_variants = .N), by = sample]
+    if ("FILTER" %in% names(variants)) {
+        pass <- variants[FILTER == "PASS", .(n_pass = .N), by = sample]
+        counts <- merge(counts, pass, by = "sample", all.x = TRUE)
+        counts[is.na(n_pass), n_pass := 0L]
+    }
+} else if (!is.null(vcf_counts)) {
+    counts <- vcf_counts
+}
+
+if (is.null(counts)) {
+    note_missing("Variant calls")
+} else {
+    write_summary(counts, "variants_per_sample")
+    kable(counts[order(-n_variants)], caption = "Variant counts per sample")
+}
+```
+
+```{r variant-counts-plot, fig.height=3.6}
+if (!is.null(counts)) {
+    ggplot(counts, aes(x = reorder(sample, n_variants), y = n_variants)) +
+        geom_col(fill = REPORT_PALETTE[3]) +
+        coord_flip() +
+        labs(title = "Variants passing filters, by sample", x = NULL, y = "Variants") +
+        report_theme()
+}
+```
+
+## Matched tumour-vs-normal calls
+
+```{r tvn}
+if (is.null(tvn_counts)) {
+    note_missing("Paired tumour-vs-normal calls")
+} else {
+    write_summary(tvn_counts, "variants_per_patient_TvN")
+    kable(tvn_counts[order(-n_variants)],
+          col.names = c("Patient / timepoint", "Variants", "PASS"),
+          caption = "Paired tumour-vs-normal variant counts")
+}
+```
+
+## Functional consequence
+
+```{r consequence, fig.height=4.5}
+if (!annotated_mode || !"variantClassification" %in% names(variants)) {
+    note_missing("Functional consequence annotation")
+} else {
+    cls <- variants[!is.na(variantClassification) & variantClassification != "",
+                    .(n = .N), by = variantClassification][order(-n)]
+    write_summary(cls, "variant_classification")
+    top_cls <- head(cls, 12)
+    print(
+        ggplot(top_cls, aes(x = reorder(variantClassification, n), y = n)) +
+            geom_col(fill = REPORT_PALETTE[2]) +
+            coord_flip() +
+            labs(title = "Variant classification (all samples)", x = NULL, y = "Variants") +
+            report_theme()
+    )
+    kable(cls, col.names = c("Classification", "Variants"),
+          caption = "Variant classifications observed")
+}
+```
+
+## Allele fraction and depth
+
+```{r vaf, fig.height=4}
+if (!annotated_mode || !"AF" %in% names(variants) || all(is.na(variants$AF))) {
+    note_missing("Per-variant allele fractions")
+} else {
+    print(
+        ggplot(variants[is.finite(AF)], aes(x = AF)) +
+            geom_histogram(bins = 50, fill = REPORT_PALETTE[1], colour = NA) +
+            labs(title = "Variant allele fraction distribution",
+                 x = "Allele fraction", y = "Variants") +
+            report_theme()
+    )
+}
+```
+
+```{r vaf-by-sample, fig.height=4}
+if (annotated_mode && "AF" %in% names(variants) && any(is.finite(variants$AF))) {
+    d <- variants[is.finite(AF)]
+    if (length(unique(d$sample)) > 1 && length(unique(d$sample)) <= 40) {
+        print(
+            ggplot(d, aes(x = reorder(sample, AF, FUN = stats::median), y = AF)) +
+                geom_boxplot(outlier.size = 0.4, fill = REPORT_PALETTE[5], alpha = 0.7) +
+                coord_flip() +
+                labs(title = "Allele fraction by sample", x = NULL, y = "Allele fraction") +
+                report_theme()
+        )
+    }
+}
+```
+
+## Predicted deleteriousness
+
+```{r cadd, fig.height=3.6}
+if (!annotated_mode || !"CADD_phred" %in% names(variants) ||
+    all(is.na(variants$CADD_phred))) {
+    note_missing("CADD deleteriousness scores")
+} else {
+    print(
+        ggplot(variants[is.finite(CADD_phred)], aes(x = CADD_phred)) +
+            geom_histogram(bins = 40, fill = REPORT_PALETTE[4], colour = NA) +
+            geom_vline(xintercept = as.numeric(params$filter_min_cadd),
+                       linetype = "dashed", colour = "grey30") +
+            labs(title = "CADD phred score distribution",
+                 subtitle = paste0("dashed line = reporting threshold (",
+                                   params$filter_min_cadd, ")"),
+                 x = "CADD phred", y = "Variants") +
+            report_theme()
+    )
+}
+```
+
+# Recurrently mutated genes
+
+```{r recurrent, fig.height=4.5}
+if (!annotated_mode || !"hugoSymbol" %in% names(variants)) {
+    note_missing("Gene-level annotation")
+} else {
+    genes <- variants[!is.na(hugoSymbol) & hugoSymbol != "" & hugoSymbol != "Unknown",
+                      .(n_variants = .N, n_samples = uniqueN(sample)), by = hugoSymbol]
+    genes <- genes[order(-n_samples, -n_variants)]
+    write_summary(genes, "recurrent_genes")
+    top_genes <- head(genes, 20)
+    if (nrow(top_genes) > 0) {
+        print(
+            ggplot(top_genes, aes(x = reorder(hugoSymbol, n_samples), y = n_samples)) +
+                geom_col(fill = REPORT_PALETTE[6]) +
+                coord_flip() +
+                labs(title = "Genes mutated in the most samples",
+                     x = NULL, y = "Samples with a variant") +
+                report_theme()
+        )
+        kable(top_genes, col.names = c("Gene", "Variants", "Samples"),
+              caption = "Most recurrently mutated genes")
+    }
+}
+```
+
+# Prioritised variants
+
+```{r top-variants}
+top_tbl <- NULL
+if (!is.null(scores)) {
+    score_col <- intersect(c("score.new", "score_new"), names(scores))
+    if (length(score_col) == 1) {
+        setnames(scores, score_col, "score_new")
+        scores[, score_new := suppressWarnings(as.numeric(score_new))]
+        keep <- intersect(c("patient", "hugoSymbol", "proteinChange",
+                            "variantClassification", "CHROM", "POS", "REF", "ALT",
+                            "CADD_phred", "mean.T.nna", "mean.N.nna", "score_new"),
+                          names(scores))
+        top_tbl <- scores[order(-score_new), ..keep]
+        top_tbl <- head(top_tbl, as.integer(params$top_n))
+    }
+} else if (annotated_mode && "CADD_phred" %in% names(variants)) {
+    keep <- intersect(c("sample", "hugoSymbol", "proteinChange", "variantClassification",
+                        "CHROM", "POS", "REF", "ALT", "CADD_phred", "AF", "DP"),
+                      names(variants))
+    top_tbl <- variants[order(-CADD_phred), ..keep]
+    top_tbl <- head(top_tbl, as.integer(params$top_n))
+}
+
+if (is.null(top_tbl) || nrow(top_tbl) == 0) {
+    note_missing("Ranked variant list")
+} else {
+    write_summary(top_tbl, "top_variants")
+    kable(top_tbl, digits = 3,
+          caption = paste("Top", nrow(top_tbl), "variants by priority score"))
+}
+```
+
+`r if (!is.null(scores)) "Variants are ranked by the pipeline's composite score (deleteriousness x mean tumour allele fraction x tumour/normal log2 fold-change), which brings likely-real somatic events to the top. See the somatic manual for the exact definition." else if (!is.null(top_tbl)) "No matched normals were available, so variants are ranked by predicted deleteriousness alone."`
+
+# Copy number and loss of heterozygosity
+
+```{r facets}
+if (is.null(purity)) {
+    note_missing("FACETS copy-number output")
+} else {
+    write_summary(purity, "facets_purity")
+    kable(purity[, .(patient_tp, value)],
+          col.names = c("Patient / timepoint", "FACETS output"),
+          caption = "FACETS purity/ploidy estimates")
+    cat("\nPer-sample copy-number and LOH plots are in `04_FACETS/` as one PDF per patient-timepoint.\n")
+}
+```
+
+# Methods and provenance
+
+```{r provenance}
+prov <- data.table(
+    Item = c("Report generated", "Reference build", "Output directory",
+             "Variant caller", "Annotation", "Copy number"),
+    Value = c(format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
+              params$genome_version,
+              normalizePath(outdir, mustWork = FALSE),
+              "GATK Mutect2 (tumour-vs-reference and matched tumour-vs-normal)",
+              if (annotated_mode) "CADD + GATK Funcotator" else "not run",
+              if (!is.null(purity)) "FACETS" else "not run")
+)
+kable(prov, caption = "Provenance")
+```
+
+Full result tables backing every figure in this report are written as tab-separated files
+to `09_report/summary_tables/`, so they can be opened directly in a spreadsheet or re-used
+in downstream analysis.
+
+**Interpretation caveats.** Somatic calls made against the reference alone (without a
+matched normal) will include private germline variants; the gnomAD germline resource and
+the tumour/normal comparison mitigate but do not eliminate this. Variant calls in regions
+with low depth are unreliable regardless of the filters applied. Predicted deleteriousness
+scores are computational estimates, not clinical determinations, and no variant here has
+been clinically validated.

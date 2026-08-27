@@ -41,6 +41,8 @@ include: "scripts/variant_annotation_TvR.smk"
 include: "scripts/variant_annotation_TvN.smk"
 # FACETS plotting CNA and LOH
 include: "scripts/FACETS.smk"
+# client-facing summary report (HTML/PDF) over whatever this run produced
+include: "scripts/report.smk"
 
 
 # add output files desired if not annotation_only setting
@@ -67,8 +69,15 @@ if not config['skip_annotation']:
         annotation_files.append(expand(join(outdir, '02_variants_reference/03_variant_new_scores/final/filtered/{pt}.vcf'), pt=unique_pts))
         # annotation_files.append(expand(join(outdir, '03_variants_TvN/02_variant_annotations/annotations_combined/filtered/{patient_tp}_filtered_annotated.vcf'), patient_tp=tn_pt_tps))
 
-rule all: 
+report_files = []
+if config['make_report']:
+    report_files.append(join(outdir, '09_report/somatic_report.html'))
+    if config['report_pdf']:
+        report_files.append(join(outdir, '09_report/somatic_report.pdf'))
+
+rule all:
     input:
-        variant_files, 
+        variant_files,
         annotation_files,
+        report_files,
         #expand(join(outdir, '04_FACETS/{patient_tp}.pdf'), patient_tp=tn_pt_tps)

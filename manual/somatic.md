@@ -52,6 +52,26 @@ To pull out variants that are likely to be true meaningful somatic events, I dev
 
 Files in the `03_variant_new_scores` directory are processed with this methodology and should pull high-confidence variants to the top of the list. 
 
+#### Client-facing summary report
+The pipeline finishes by building a self-contained report summarising the whole run, intended to be handed directly to a collaborator or client:
+```
+09_report/somatic_report.html    # self-contained, opens in any browser
+09_report/somatic_report.pdf     # same content, paginated for formal delivery
+09_report/summary_tables/*.tsv   # every figure's underlying table, for Excel/re-analysis
+```
+It covers: run configuration, sequencing depth and tumour-in-normal contamination QC, variant counts per sample, functional-consequence and variant-type breakdowns, allele-fraction and CADD distributions, recurrently mutated genes, a ranked shortlist of prioritised variants, and FACETS purity — plus a methods/provenance section and explicit interpretation caveats.
+
+The report adapts to how the run was configured. With `skip_annotation: True` (the local config), the gene-level, consequence, and deleteriousness sections are omitted automatically and the QC and variant-count sections still render — it does not fail. Sections whose inputs are missing for any other reason (no matched normals, FACETS not run) are likewise skipped with a short note rather than erroring.
+
+Control it with these config options (all optional):
+```yaml
+make_report: True                       # build the report at all
+report_pdf: True                        # also render PDF (needs LaTeX/tectonic from envs/rmarkdown.yml)
+project_name: "Client X - AML panel"    # report title
+report_top_n: 40                        # rows in the prioritised-variant table
+```
+HTML and PDF are rendered by separate Snakemake rules, so a broken LaTeX toolchain costs you the PDF but never the HTML. Set `report_pdf: False` if you don't need PDF.
+
 #### Output files
 The following output directories and files are generated from this pipeline: 
 ```
@@ -91,4 +111,9 @@ The following output directories and files are generated from this pipeline:
       unfiltered: same, but without the filters applied
 
 04_FACETS: data file and plots from running the FACETS algorithm for LOH and CNA detection.
+
+09_report: client-facing summary report (see above)
+  somatic_report.html / .pdf: the report itself
+  summary_tables: TSV table behind every figure in the report
+  logs: rendering logs, useful if a report build fails
 ```
