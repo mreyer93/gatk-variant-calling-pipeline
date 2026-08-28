@@ -26,6 +26,9 @@ test/data/
 # Local Claude Code session settings
 .claude/
 
+# Session handoff notes - visible in the repo folder, deliberately not committed
+/HANDOFF.md
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
