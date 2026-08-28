@@ -57,7 +57,10 @@ if not config['annotation_only']:
     variant_files.append(expand(join(outdir, '01_prepare_bam/GetPileupSummaries/{sample}_GetPileupSummaries.table'), sample=sample_list))
     variant_files.append(expand(join(outdir, '01_prepare_bam/CalculateContamination/{t_sample}_contam.table'), t_sample=all_t_contamination_samples))
     variant_files.append(expand(join(outdir, '02_variants_reference/01_gatk_variant_calling/filtered/{sample}_filtered.vcf'), sample=sample_list))
-    #variant_files.append(expand(join(outdir, '03_variants_TvN/01_gatk_variant_calling/filtered/{patient_tp}_filtered.vcf'), patient_tp=tn_pt_tps))
+    # Matched tumour-vs-normal calling, for every patient/timepoint that has both a
+    # tumour and a normal sample. Skipped automatically when no such pairs exist.
+    if config['call_tumor_normal'] and tn_pt_tps:
+        variant_files.append(expand(join(outdir, '03_variants_TvN/01_gatk_variant_calling/filtered/{patient_tp}_filtered.vcf'), patient_tp=tn_pt_tps))
 
 annotation_files = []
 if not config['skip_annotation']:

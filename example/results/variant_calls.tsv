@@ -1,0 +1,110 @@
+CHROM	POS	REF	ALT	FILTER	AF	DP	mode	pass
+chr1	131731	C	T	PASS	0.234	15	Normal vs reference	TRUE
+chr1	131957	C	A	PASS	0.25	26	Normal vs reference	TRUE
+chr1	131965	G	A	PASS	0.205	27	Normal vs reference	TRUE
+chr1	132138	C	T	PASS	0.331	10	Normal vs reference	TRUE
+chr1	132359	C	T	PASS	0.209	17	Normal vs reference	TRUE
+chr1	132420	G	A	orientation	0.165	18	Normal vs reference	FALSE
+chr1	132455	C	G	PASS	0.222	16	Normal vs reference	TRUE
+chr1	132580	G	C	PASS	0.135	21	Normal vs reference	TRUE
+chr1	132838	G	T	PASS	0.28	23	Normal vs reference	TRUE
+chr1	133010	C	T	PASS	0.184	36	Normal vs reference	TRUE
+chr1	133129	G	A	PASS	0.538	64	Normal vs reference	TRUE
+chr1	133483	G	T	germline	0.381	50	Normal vs reference	FALSE
+chr1	133700	A	C	PASS	0.079	48	Normal vs reference	TRUE
+chr1	134223	G	C	PASS	0.146	48	Normal vs reference	TRUE
+chr1	134266	G	A	orientation	0.192	25	Normal vs reference	FALSE
+chr1	134367	G	A	PASS	0.27	46	Normal vs reference	TRUE
+chr1	134397	A	C	PASS	0.093	61	Normal vs reference	TRUE
+chr1	134516	G	A	PASS	0.165	16	Normal vs reference	TRUE
+chr1	134610	G	A	PASS	0.143	19	Normal vs reference	TRUE
+chr1	134912	C	T	PASS	0.132	44	Normal vs reference	TRUE
+chr1	135252	C	T	PASS	0.052	95	Normal vs reference	TRUE
+chr1	135465	C	T	PASS	0.189	40	Normal vs reference	TRUE
+chr1	135539	C	T	PASS	0.249	18	Normal vs reference	TRUE
+chr1	135663	G	A	PASS	0.185	14	Normal vs reference	TRUE
+chr1	135804	G	A	germline	0.262	17	Normal vs reference	FALSE
+chr1	135924	C	G	PASS	0.198	13	Normal vs reference	TRUE
+chr1	135982	A	G	PASS	0.803	2	Normal vs reference	TRUE
+chr1	136048	C	T	germline	0.403	69	Normal vs reference	FALSE
+chr1	136635	T	G	germline	0.616	24	Normal vs reference	FALSE
+chr1	136962	C	T	PASS	0.624	56	Normal vs reference	TRUE
+chr1	136995	C	T	PASS	0.205	42	Normal vs reference	TRUE
+chr1	137204	C	T	clustered_events;haplotype	0.093	84	Normal vs reference	FALSE
+chr1	137205	G	A	clustered_events	0.095	82	Normal vs reference	FALSE
+chr1	137263	A	G	clustered_events;haplotype	0.077	81	Normal vs reference	FALSE
+chr1	137287	G	A	clustered_events	0.211	50	Normal vs reference	FALSE
+chr1	137420	G	A	PASS	0.221	113	Normal vs reference	TRUE
+chr1	137508	C	A	clustered_events	0.269	87	Normal vs reference	FALSE
+chr1	137536	G	C	clustered_events	0.171	56	Normal vs reference	FALSE
+chr1	137567	G	A	clustered_events;strand_bias	0.091	52	Normal vs reference	FALSE
+chr1	137622	G	A	clustered_events	0.188	56	Normal vs reference	FALSE
+chr1	137825	G	A	PASS	0.308	100	Normal vs reference	TRUE
+chr1	137924	G	A	orientation	0.083	59	Normal vs reference	FALSE
+chr1	138156	G	T	PASS	0.615	68	Normal vs reference	TRUE
+chr1	138593	G	T	PASS	0.318	91	Normal vs reference	TRUE
+chr1	138980	G	T	PASS	0.097	85	Normal vs reference	TRUE
+chr1	139213	A	G	PASS	0.227	95	Normal vs reference	TRUE
+chr1	139233	C	A	PASS	0.259	107	Normal vs reference	TRUE
+chr1	139781	G	A	PASS	0.818	3	Normal vs reference	TRUE
+chr1	139947	G	A	clustered_events	0.3	9	Normal vs reference	FALSE
+chr1	139967	T	C,A	clustered_events;multiallelic	0.673	6	Normal vs reference	FALSE
+chr1	140038	C	G	clustered_events	0.427	5	Normal vs reference	FALSE
+chr1	140144	A	G	orientation	0.294	16	Normal vs reference	FALSE
+chr1	140274	A	C	germline;orientation	0.176	17	Normal vs reference	FALSE
+chr1	140918	C	G	PASS	0.184	14	Normal vs reference	TRUE
+chr1	141186	A	G	orientation	0.157	18	Normal vs reference	FALSE
+chr1	141263	C	T	PASS	0.331	7	Normal vs reference	TRUE
+chr1	131957	C	A	PASS	0.273	21	Tumour vs reference	TRUE
+chr1	131965	G	A	PASS	0.304	23	Tumour vs reference	TRUE
+chr1	132138	C	T	PASS	0.286	12	Tumour vs reference	TRUE
+chr1	132290	T	C	PASS	0.246	14	Tumour vs reference	TRUE
+chr1	132420	G	A	orientation	0.333	13	Tumour vs reference	FALSE
+chr1	132661	T	C	orientation	0.136	20	Tumour vs reference	FALSE
+chr1	132782	G	A	PASS	0.132	28	Tumour vs reference	TRUE
+chr1	133010	C	T	PASS	0.074	53	Tumour vs reference	TRUE
+chr1	133129	G	A	PASS	0.359	76	Tumour vs reference	TRUE
+chr1	133671	G	A	orientation	0.067	72	Tumour vs reference	FALSE
+chr1	133700	A	C	orientation	0.084	57	Tumour vs reference	FALSE
+chr1	134266	G	A	PASS	0.191	24	Tumour vs reference	TRUE
+chr1	134367	G	A	PASS	0.19	70	Tumour vs reference	TRUE
+chr1	135301	G	A	orientation	0.1	42	Tumour vs reference	FALSE
+chr1	135412	G	A	clustered_events;orientation	0.127	53	Tumour vs reference	FALSE
+chr1	135465	C	T	clustered_events	0.411	59	Tumour vs reference	FALSE
+chr1	135539	C	T	clustered_events	0.275	49	Tumour vs reference	FALSE
+chr1	135554	G	A	clustered_events	0.116	41	Tumour vs reference	FALSE
+chr1	135663	G	A	PASS	0.352	15	Tumour vs reference	TRUE
+chr1	135804	G	A	germline	0.302	41	Tumour vs reference	FALSE
+chr1	135924	C	G	orientation	0.136	20	Tumour vs reference	FALSE
+chr1	135982	A	G	PASS	0.857	4	Tumour vs reference	TRUE
+chr1	136635	T	G	germline	0.574	48	Tumour vs reference	FALSE
+chr1	136934	G	A	PASS	0.098	59	Tumour vs reference	TRUE
+chr1	136962	C	T	PASS	0.612	52	Tumour vs reference	TRUE
+chr1	137032	G	A	haplotype	0.11	25	Tumour vs reference	FALSE
+chr1	137035	A	AG	haplotype;weak_evidence	0.106	26	Tumour vs reference	FALSE
+chr1	137205	G	A	PASS	0.103	56	Tumour vs reference	TRUE
+chr1	137420	G	A	PASS	0.233	88	Tumour vs reference	TRUE
+chr1	137508	C	A	PASS	0.14	76	Tumour vs reference	TRUE
+chr1	137536	G	C	PASS	0.08	60	Tumour vs reference	TRUE
+chr1	138156	G	T	PASS	0.407	52	Tumour vs reference	TRUE
+chr1	138593	G	T	PASS	0.377	68	Tumour vs reference	TRUE
+chr1	138980	G	T	PASS	0.188	100	Tumour vs reference	TRUE
+chr1	139038	T	C	PASS	0.041	139	Tumour vs reference	TRUE
+chr1	139213	A	G	PASS	0.367	88	Tumour vs reference	TRUE
+chr1	139233	C	A	PASS	0.333	103	Tumour vs reference	TRUE
+chr1	139947	G	A	PASS	0.308	12	Tumour vs reference	TRUE
+chr1	139967	T	C	PASS	0.88	6	Tumour vs reference	TRUE
+chr1	140144	A	G	PASS	0.461	11	Tumour vs reference	TRUE
+chr1	141186	A	G	PASS	0.248	10	Tumour vs reference	TRUE
+chr1	141399	C	T	PASS	0.444	7	Tumour vs reference	TRUE
+chr1	132290	T	C	PASS	0.246	14	Tumour vs matched normal	TRUE
+chr1	132661	T	C	normal_artifact;orientation;weak_evidence	0.136	20	Tumour vs matched normal	FALSE
+chr1	132782	G	A	PASS	0.132	28	Tumour vs matched normal	TRUE
+chr1	133671	G	A	normal_artifact;orientation	0.067	72	Tumour vs matched normal	FALSE
+chr1	133700	A	C	normal_artifact;orientation	0.084	57	Tumour vs matched normal	FALSE
+chr1	135301	G	A	normal_artifact;orientation	0.1	42	Tumour vs matched normal	FALSE
+chr1	135412	G	A	normal_artifact;orientation	0.129	52	Tumour vs matched normal	FALSE
+chr1	135554	G	A	PASS	0.116	41	Tumour vs matched normal	TRUE
+chr1	137698	C	T	normal_artifact;weak_evidence	0.051	75	Tumour vs matched normal	FALSE
+chr1	138980	G	T	normal_artifact	0.188	100	Tumour vs matched normal	FALSE
+chr1	139038	T	C	normal_artifact;orientation;strand_bias	0.041	139	Tumour vs matched normal	FALSE

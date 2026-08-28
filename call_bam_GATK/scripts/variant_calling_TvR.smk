@@ -34,8 +34,11 @@ rule mutect2_reference:
             --germline-resource {input.gnomad} \
             --native-pair-hmm-threads {threads} \
             --f1r2-tar-gz {output.f1r2}
-        # fix error with M chromosome showing up, when it should be chrM
-        sed -i "s/contig=<ID=M/contig=<ID=chrM/g" {output.vcf}
+        # fix error with M chromosome showing up, when it should be chrM.
+        # Written via a temp file rather than `sed -i`: BSD/macOS sed requires an
+        # explicit backup suffix after -i, so `sed -i "expr" file` fails there.
+        sed "s/contig=<ID=M/contig=<ID=chrM/g" {output.vcf} > {output.vcf}.tmp \
+            && mv {output.vcf}.tmp {output.vcf}
     """
 
 # Read orientation bias detection (this sample has no matched normal, so there's no

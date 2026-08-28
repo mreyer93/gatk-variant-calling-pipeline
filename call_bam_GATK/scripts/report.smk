@@ -10,7 +10,9 @@
 # (config_call_bam_GATK_local.yaml), the gene/consequence/deleteriousness sections are
 # omitted and the QC + variant-count sections still render.
 
-report_scripts_dir = workflow.current_basedir
+# str(): Snakemake wraps this in its own source-file object, which cannot be converted
+# when passed as a param to an R script.
+report_scripts_dir = str(workflow.current_basedir)
 
 
 def _report_inputs(wildcards):

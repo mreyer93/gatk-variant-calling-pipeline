@@ -30,7 +30,11 @@ regions_df <- regions_df[order(as.numeric(gsub('chr', '', regions_df$chr)), regi
 regions_df$chr <- factor(regions_df$chr, levels=unique(regions_df$chr))
 regions_df$size <- regions_df$end - regions_df$start
 regions_df$i <- 1:nrow(regions_df)
-regions_df$chr_i <- do.call(c, sapply(table(regions_df$chr), function(x) c(1:x)))
+# within-chromosome index of each region. lapply, not sapply: when every chromosome has
+# the same number of regions (e.g. exactly one, as with whole-contig targets) sapply
+# simplifies to a vector and do.call(c, .) then fails with "second argument must be a list".
+regions_df$chr_i <- unlist(lapply(table(regions_df$chr), function(x) seq_len(x)),
+                           use.names = FALSE)
 
 # smoothing function 
 # sliding window with size w and step s
@@ -91,13 +95,25 @@ smooth_depth_df_regions <- function(depth_df, regions_df, w=200, s=100){
         }
         r_start <- regions_df[i, "start"]
         r_end <- regions_df[i, "end"]
-        depth_df_r <- dl[[r_chr]]
+        # A target contig can be missing from the depth table entirely: `samtools depth`
+        # emits nothing for a contig with no alignments, even with -a. That is a real
+        # situation (failed capture, a contig absent from the data), so record NA and
+        # carry on rather than aborting the whole sample.
+        if(!(as.character(r_chr) %in% names(dl))){
+            res_df[i, 'max_w_depth'] <- NA
+            next
+        }
+        depth_df_r <- dl[[as.character(r_chr)]]
         depth_df_r <- as.data.frame(depth_df_r[depth_df_r$pos >= r_start & depth_df_r$pos <= r_end, ])
+        if(nrow(depth_df_r) == 0){
+            res_df[i, 'max_w_depth'] <- NA
+            next
+        }
+        # Regions shorter than the smoothing window cannot be windowed; summarise the
+        # whole region instead of failing.
         if(nrow(depth_df_r) < w){
-            print(regions_df[i,])
-            print(nrow(depth_df_r))
-            print(i)
-            stop()
+            res_df[i, 'max_w_depth'] <- round(mean(depth_df_r[, "depth"], na.rm = TRUE))
+            next
         }
         max_w_depth <- 0
         start_ind <- 1
@@ -116,12 +132,12 @@ smooth_depth_df_regions <- function(depth_df, regions_df, w=200, s=100){
 
 smooth_region_df <- smooth_depth_df_regions(depth_df, regions_df, w=200, s=100)
 smooth_region_df$chr <- factor(smooth_region_df$chr, levels=unique(smooth_region_df$chr))
-# clip at the 99th qantile
-clip_val <- round(quantile(smooth_region_df$max_w_depth, probs=c(0.99)))
-smooth_region_df$max_w_depth[smooth_region_df$max_w_depth>clip_val] <- clip_val
+# clip at the 99th quantile. na.rm because regions on contigs with no coverage are NA.
+clip_val <- round(quantile(smooth_region_df$max_w_depth, probs=c(0.99), na.rm = TRUE))
+smooth_region_df$max_w_depth[which(smooth_region_df$max_w_depth > clip_val)] <- clip_val
 # and set anything in the 1% quantile to NA as uninformative
-clip_val_low <- round(quantile(smooth_region_df$max_w_depth, probs=c(0.01)))
-smooth_region_df$max_w_depth[smooth_region_df$max_w_depth < clip_val_low] <- NA
+clip_val_low <- round(quantile(smooth_region_df$max_w_depth, probs=c(0.01), na.rm = TRUE))
+smooth_region_df$max_w_depth[which(smooth_region_df$max_w_depth < clip_val_low)] <- NA
 
 # ggplot(smooth_region_df, aes(x=start, y=max_w_depth)) + 
 #     geom_point() + 

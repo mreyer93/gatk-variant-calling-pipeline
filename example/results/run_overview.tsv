@@ -1,0 +1,10 @@
+Item	Value
+Samples analysed	2
+Patients	1
+Tumour samples	1
+Normal samples	1
+Reference build	GRCh37
+Variant annotation	not run (calling only)
+Min allele fraction	0.02
+Min depth	5
+Min CADD	20

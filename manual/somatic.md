@@ -23,6 +23,8 @@ Reference files, the capture-panel target BED, and annotation directories must b
 
 Mutect2 is run with `--germline-resource` pointed at the gnomAD resource in the config, to help distinguish somatic from germline calls, and orientation-bias correction (`LearnReadOrientationModel`/`--ob-priors`) is applied on both the tumor-vs-reference and tumor-vs-normal paths. There is no panel-of-normals (PoN) support yet - if you have a cohort of matched normal samples, building and wiring in a PoN is a worthwhile follow-on improvement for more accurate somatic filtering.
 
+Matched tumour-vs-normal calling runs automatically for any patient/timepoint that has both a T and an N sample. Set `call_tumor_normal: False` to run tumour-vs-reference only; a cohort with no matched normals is unaffected either way. See [example/](../example/README.md) for what the difference looks like in practice - on the demo pair, 28 PASS calls against the reference alone become 3 once the normal is subtracted.
+
 ##### Running without CADD (e.g. on a laptop)
 CADD's database is 400G+, which won't fit on most local machines. Unlike the germline
 pipeline, there's no lightweight substitute here: the "new score" ranking below multiplies
@@ -63,7 +65,7 @@ It covers: run configuration, sequencing depth and tumour-in-normal contaminatio
 
 The report adapts to how the run was configured. With `skip_annotation: True` (the local config), the gene-level, consequence, and deleteriousness sections are omitted automatically and the QC and variant-count sections still render — it does not fail. Sections whose inputs are missing for any other reason (no matched normals, FACETS not run) are likewise skipped with a short note rather than erroring.
 
-Control it with these config options (all optional):
+Control the report with these config options (all optional):
 ```yaml
 make_report: True                       # build the report at all
 report_pdf: True                        # also render PDF (needs LaTeX/tectonic from envs/rmarkdown.yml)

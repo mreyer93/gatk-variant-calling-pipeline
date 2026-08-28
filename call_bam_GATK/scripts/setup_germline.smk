@@ -64,11 +64,11 @@ if not('skip_cadd' in config):
 if not('alphamissense_file' in config):
     config['alphamissense_file'] = ''
 # determine final bam for variant calling based on config 
+# See the note in setup.smk: the sample name must be substituted here rather than left
+# as a literal "{sample}" for Snakemake to re-expand against the requesting rule.
 def get_final_bam(sample):
     if config['skip_bqsr']:
-        final_bam = join(outdir, '01_prepare_bam/add_readgroups/{sample}.fixchr.bam')
+        return join(outdir, '01_prepare_bam/add_readgroups/{}.fixchr.bam'.format(sample))
     elif config['final_bam']:
-        final_bam = bam_map[sample]
-    else:
-        final_bam = join(outdir, '01_prepare_bam/recalibrate/{sample}.fixchr.bam')
-    return(final_bam)
+        return bam_map[sample]
+    return join(outdir, '01_prepare_bam/recalibrate/{}.fixchr.bam'.format(sample))

@@ -6,6 +6,25 @@ from collections import defaultdict
 
 # define parameters from the configfile 
 outdir = config['output_directory']
+
+# skip_bqsr is read below by get_final_bam, which several sample->bam maps depend on,
+# so the default has to be established before any of them are built.
+if not('skip_bqsr' in config):
+    config['skip_bqsr'] = False
+
+
+# Determine the final bam for variant calling, for a specific sample.
+#
+# This must substitute the sample name rather than returning a template containing a
+# literal "{sample}": Snakemake would otherwise re-expand that against the *requesting*
+# rule's wildcards. For tumour-vs-reference the wildcard happens to be the sample, so it
+# appeared to work, but for tumour-vs-normal and FACETS the wildcard is a
+# patient/timepoint, and those rules resolved to a nonexistent bam.
+def get_final_bam(sample):
+    if config['skip_bqsr']:
+        return join(outdir, '01_prepare_bam/add_readgroups/{}.fixchr.bam'.format(sample))
+    return join(outdir, '01_prepare_bam/recalibrate/{}.fixchr.bam'.format(sample))
+
 # for now, used the ref file with fixed chromosome names
 REF_FILE = config['REF_FILE']
 dbsnp_file =config['dbsnp_file']
@@ -65,7 +84,7 @@ bam_map = {a: b for a,b in zip(sample_list, bamfile_list)}
 # add annotation for patient-timepoint pair
 metadata['pt_tp'] = [str(a)+'_'+str(b) for a, b in zip(metadata['patient'], metadata['timepoint'])]       
 # sample name to final bamfile
-sample_to_final_bam = {a:b for a, b in zip(list(metadata['sample']), expand(join(outdir, '01_prepare_bam/recalibrate/{sample}.fixchr.bam'), sample= list(metadata['sample'])))}
+sample_to_final_bam = {s: get_final_bam(s) for s in list(metadata['sample'])}
 # map out what we need for calling tumor vs normal for each patient-timepoint pair
 # this will be tumors from this timepoint, and the DX normals
 tn_pt_tps = []
@@ -102,7 +121,7 @@ for p in unique_pts:
             # all samples to use in this calculation            
             pt_tp_to_samples[pt_tp] = n_samples_pt_tp[pt_tp] + t_samples_pt_tp[pt_tp]
             # all bams to use in this calculation
-            pt_tp_to_final_bams[pt_tp] = expand(join(outdir, '01_prepare_bam/recalibrate/{sample}.fixchr.bam'), sample= pt_tp_to_samples[pt_tp])
+            pt_tp_to_final_bams[pt_tp] = [get_final_bam(x) for x in pt_tp_to_samples[pt_tp]]
 
 # for tumor-normal contamination estimation, which pairs do we want to calculate
 # it's each tumor vs one normal, ideally the best one
@@ -119,8 +138,6 @@ for pt,samples in t_samples_pt.items():
 
 all_t_contamination_samples = [item for sublist in list(t_samples_pt.values()) for item in sublist] 
 
-if not('skip_bqsr' in config):
-    config['skip_bqsr'] = False
 if not('skip_annotation' in config):
     config['skip_annotation'] = False
 # make_report: build the client-facing summary report (see scripts/report.smk).
@@ -130,10 +147,9 @@ if not('make_report' in config):
     config['make_report'] = True
 if not('report_pdf' in config):
     config['report_pdf'] = True
-# determine final bam for variant calling based on config
-def get_final_bam(sample):
-    if config['skip_bqsr']:
-        final_bam = join(outdir, '01_prepare_bam/add_readgroups/{sample}.fixchr.bam')
-    else:
-        final_bam = join(outdir, '01_prepare_bam/recalibrate/{sample}.fixchr.bam')
-    return(final_bam)
+# call_tumor_normal: also run Mutect2 in matched tumour-vs-normal mode for every
+# patient/timepoint that has both a T and an N sample. Only has an effect when such
+# pairs exist, so it is safe to leave on: a cohort with no matched normals is
+# unaffected. Set False to run tumour-vs-reference calling only.
+if not('call_tumor_normal' in config):
+    config['call_tumor_normal'] = True

@@ -36,6 +36,21 @@ Don't have 400G+ free for CADD? Use `config_call_bam_GATK_local.yaml` /
 for what that trades off, or [cloud/gcp/README.md](cloud/gcp/README.md) to run the full
 pipeline on a GCP VM instead of locally.
 
+## Worked example
+
+[`example/`](example/README.md) is a complete run on a public matched tumour/normal pair
+with the figures committed, so you can see what the pipeline produces without running it.
+The headline: the same tumour yields 28 PASS calls against the reference alone but only 3
+once the matched normal is subtracted — the rest are inherited variants.
+
+[![Calls by mode](example/figures/calls_by_mode.png)](example/README.md)
+
+Run it yourself (~2 minutes, ~2 MB of public data):
+
+```bash
+./test/run_test.sh
+```
+
 ## User Manual
 1. [Installation requirements](manual/requirements.md)
 2. [Sequence read QC and alignment](manual/processing.md)
