@@ -22,6 +22,14 @@ Reference files and the capture-panel target BED must be specified - see [manual
 
 Optional config flags (all default to `False` if omitted): `skip_bqsr` (use the read-group-fixed bam directly, skipping BQSR), `final_bam` (use the input bam as-is, skipping both BQSR and chromosome-fixing), `skip_annotation` (stop after variant calling, skip the annotation step).
 
+##### CADD licensing: commercial and client work
+CADD is free for non-commercial use only, and the full config runs it. For paid client work
+without a CADD licence use `config_call_bam_GATK_germline_commercial.yaml`, which sets
+`skip_cadd: True` and points at AlphaMissense. Unlike the somatic commercial config, this one
+keeps the rest of the annotation stage: Funcotator still runs, and only the CADD step is
+skipped. See [manual/requirements.md](requirements.md#annotation-licensing-and-commercial-use)
+for the licence terms on both CADD and AlphaMissense.
+
 ##### Running without CADD (e.g. on a laptop)
 CADD's database is 400G+, which won't fit on most local machines. Set `skip_cadd: True` and
 point `alphamissense_file` at a tabix-indexed `AlphaMissense_hg38.tsv.gz`

@@ -1,0 +1,40 @@
+gatk-variant-calling-pipeline
+Copyright 2026 Matthew Reyer
+
+This product includes software developed by Matthew Reyer
+(https://github.com/mreyer93).
+
+Licensed under the Apache License, Version 2.0. See LICENSE for the full text.
+
+--------------------------------------------------------------------------------
+Third-party tools invoked by these workflows
+--------------------------------------------------------------------------------
+
+The workflows in this repository orchestrate third-party software that is
+downloaded at run time via conda and is NOT redistributed here. Each remains
+under its own licence, which is unaffected by the Apache-2.0 licence above.
+Notable components include GATK (BSD-3-Clause), Snakemake (MIT), samtools and
+bcftools (MIT/Expat), bwa (GPL-3.0), and FACETS (GPL-3.0).
+
+--------------------------------------------------------------------------------
+Annotation data sources: licence restrictions that affect commercial use
+--------------------------------------------------------------------------------
+
+CADD (Combined Annotation Dependent Depletion) is free for non-commercial use
+only. The CADD distribution states that scores are "freely available for all
+non-commercial applications" and that commercial applications require a licence,
+obtainable from UW CoMotion:
+
+    https://cadd.gs.washington.edu/download
+    https://els2.comotion.uw.edu/product/cadd-scores
+
+CADD is enabled in the full configs. For commercial or client work without a CADD
+licence, use the *_commercial.yaml configs described in manual/requirements.md.
+
+AlphaMissense (https://github.com/google-deepmind/alphamissense) licenses its code
+under Apache-2.0 and its published predictions under CC BY 4.0, which permits
+commercial use with attribution. Some mirrors redistribute the predictions under
+CC BY-NC-SA; confirm the terms attached to the file you actually download.
+
+Reference data from the Broad Institute resource bundle, gnomAD, and Ensembl each
+carry their own terms. None of it is redistributed in this repository.

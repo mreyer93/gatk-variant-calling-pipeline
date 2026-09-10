@@ -33,6 +33,16 @@ mkdir -p "$REF" "$FQ" "$BAM"
 
 fetch() { [[ -s "$2" ]] && return 0; echo "  $(basename "$2")"; curl -sfL -o "$2" "$1" || { echo "FAILED: $1" >&2; exit 1; }; }
 
+echo "==> Config licensing check"
+# Fast, needs no conda env: confirms the *_commercial.yaml configs really do keep CADD
+# switched off. CADD is non-commercial-only, so that promise is worth a regression guard.
+if python3 -c "import yaml" 2>/dev/null; then
+    python3 "$(dirname "$0")/test_config_licensing.py" || exit 1
+else
+    echo "  SKIP (pyyaml not available outside the pipeline env)"
+fi
+echo
+
 echo "==> Reference"
 fetch "$RAW/reference/human_g1k_v37_decoy.small.fasta" "$REF/human_g1k_v37_decoy.small.fasta"
 fetch "$RAW/reference/human_g1k_v37_decoy.small.fasta.fai" "$REF/human_g1k_v37_decoy.small.fasta.fai"

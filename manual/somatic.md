@@ -25,6 +25,28 @@ Mutect2 is run with `--germline-resource` pointed at the gnomAD resource in the 
 
 Matched tumour-vs-normal calling runs automatically for any patient/timepoint that has both a T and an N sample. Set `call_tumor_normal: False` to run tumour-vs-reference only; a cohort with no matched normals is unaffected either way. See [example/](../example/README.md) for what the difference looks like in practice - on the demo pair, 28 PASS calls against the reference alone become 3 once the normal is subtracted.
 
+##### CADD licensing: commercial and client work
+CADD is free for non-commercial use only, and the full config runs it. For paid client work
+without a CADD licence use `config_call_bam_GATK_commercial.yaml`, which sets
+`skip_annotation: True`. See
+[manual/requirements.md](requirements.md#annotation-licensing-and-commercial-use) for the
+licence terms and the AlphaMissense position.
+
+That config is blunter than it should be. Because the somatic pipeline has no granular
+`skip_cadd` flag (the germline pipeline does), switching CADD off also switches off Funcotator
+and the scoring stage, even though Funcotator carries no commercial restriction. A commercial
+client therefore gets calls, filtering, FACETS and the report, but no gene-level or
+consequence annotation.
+
+*Known improvement, not yet implemented:* add `skip_cadd` to the somatic path so Funcotator and
+VariantAnnotator still run when CADD is off. The germline implementation is the template: an
+input function returning `[]` when CADD is skipped (`_cadd_input_germline` in
+`scripts/variant_annotation_germline.smk`) plus a null guard in the combine script
+(`scripts/combine_annotation_germline.R`). The somatic equivalents are
+`scripts/variant_annotation_TvR.smk` and `scripts/combine_annotation.R`. The new-score stage
+genuinely cannot run without CADD, since the score is CADD x mean tumour AF x log2 fold change,
+so it would need gating separately from the rest of the annotation stage.
+
 ##### Running without CADD (e.g. on a laptop)
 CADD's database is 400G+, which won't fit on most local machines. Unlike the germline
 pipeline, there's no lightweight substitute here: the "new score" ranking below multiplies

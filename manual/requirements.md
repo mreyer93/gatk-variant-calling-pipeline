@@ -42,8 +42,44 @@ That script does **not** cover two things that aren't simple file downloads:
    see the comment in `config_call_bam_GATK.yaml` for how to generate one) - there is no default,
    since a different project may use a different panel.
 
+#### Annotation licensing and commercial use
+Two of the annotation data sources carry licence terms that matter if you are being paid.
+
+**CADD is free for non-commercial use only.** The CADD distribution states that scores are
+"freely available for all non-commercial applications" and that "If you are planning on using
+them in a commercial application, please obtain a license"
+([download page](https://cadd.gs.washington.edu/download); commercial licence via
+[UW CoMotion](https://els2.comotion.uw.edu/product/cadd-scores)). The full configs
+(`config_call_bam_GATK.yaml`, `config_call_bam_GATK_germline.yaml`) run CADD, so running them
+for a paying client without a licence is a licence breach.
+
+For commercial or client work, use the commercial configs instead:
+
+| Config | What it does about CADD |
+|---|---|
+| `config_call_bam_GATK_commercial.yaml` | `skip_annotation: True` - no CADD, and no Funcotator or scoring either (see below) |
+| `config_call_bam_GATK_germline_commercial.yaml` | `skip_cadd: True` plus AlphaMissense; Funcotator still runs |
+
+The somatic side is the blunter of the two, and that is a known limitation rather than a
+design choice: the somatic pipeline has no granular `skip_cadd` flag, so switching CADD off
+takes Funcotator and the "new score" ranking with it, even though Funcotator carries no
+commercial restriction. The germline pipeline does have the granular flag. Adding the somatic
+equivalent is a worthwhile improvement, noted in [somatic.md](somatic.md).
+
+**AlphaMissense permits commercial use, with a caveat worth checking.** The
+[DeepMind repository](https://github.com/google-deepmind/alphamissense) licenses its code
+under Apache-2.0 and its published predictions under CC BY 4.0, which allows commercial use
+with attribution. Some mirrors redistribute the predictions under CC BY-NC-SA, so confirm the
+terms attached to the file you actually download. Note also DeepMind's own disclaimer that
+AlphaMissense "has not been validated for, and is not approved for, any clinical use."
+
+Nothing else in the pipeline restricts commercial use: GATK is BSD-3-Clause, Snakemake is MIT,
+and the Broad resource bundle, gnomAD and Ensembl reference data carry their own terms but no
+non-commercial clause of this kind.
+
 #### Install CADD scripts and download databases
-CADD (v1.6+, which supports GRCh38) is used for variant deleteriousness scoring. The databases are
+Skip this section entirely if you are running commercial work without a CADD licence (see
+above). CADD (v1.6+, which supports GRCh38) is used for variant deleteriousness scoring. The databases are
 very large (400G+) and take time to download. Once the `gatk-pipeline` conda environment above is
 created and activated, you will have access to the `cadd.sh` and `cadd-install.sh` scripts. Run
 `cadd-install.sh` and install the databases you need (answer "no" to the first question, which
@@ -51,6 +87,10 @@ asks about installing a separate CADD conda environment - you already have one).
 do this before running the pipeline all the way through.
 
 #### Running on a machine without room for CADD
+This is a disk-space problem rather than a licensing one, but the answer overlaps: both the
+local and the commercial configs switch CADD off. Pick by intent, since the two differ in what
+else they assume about the machine.
+
 If you don't have 400G+ free (most laptops don't), use `config_call_bam_GATK_germline_local.yaml` /
 `config_call_bam_GATK_local.yaml` instead of the full configs - see
 [manual/germline.md](germline.md) and [manual/somatic.md](somatic.md) for what each one trades

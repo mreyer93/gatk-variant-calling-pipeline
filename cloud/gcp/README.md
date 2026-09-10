@@ -46,6 +46,15 @@ cadd-install.sh   # answer "no" to installing a separate CADD conda env - you al
 This step takes a while (400G+ for CADD alone) but only happens once - it all lives on
 the persistent disk, not the VM, so it survives stopping/deleting the VM.
 
+> **CADD is licensed for non-commercial use only.** The CADD distribution states that
+> scores are "freely available for all non-commercial applications" and that commercial
+> applications require a licence
+> ([download page](https://cadd.gs.washington.edu/download),
+> [licence](https://els2.comotion.uw.edu/product/cadd-scores)). The full config runs CADD,
+> so for paid client work use `config_call_bam_GATK_commercial.yaml` /
+> `config_call_bam_GATK_germline_commercial.yaml`, and skip `cadd-install.sh` above
+> entirely. See [manual/requirements.md](../../manual/requirements.md#annotation-licensing-and-commercial-use).
+
 ## Routine workflow
 ```bash
 ./cloud/gcp/start_vm.sh
@@ -53,7 +62,10 @@ gcloud compute ssh gatk-pipeline-vm --project=<your-project> --zone=us-central1-
 # on the VM:
 source /mnt/data/miniforge3/etc/profile.d/conda.sh && conda activate gatk-pipeline
 cd gatk-variant-calling-pipeline
+# for non-commercial/academic work (runs CADD):
 snakemake -s call_bam_GATK/call_bam_GATK.snakefile --configfile /mnt/data/my_run/config_call_bam_GATK.yaml --use-conda --jobs 16 --cores 16 -k
+# for commercial/client work WITHOUT a CADD licence, use the commercial config instead:
+# snakemake -s call_bam_GATK/call_bam_GATK.snakefile --configfile /mnt/data/my_run/config_call_bam_GATK_commercial.yaml --use-conda --jobs 16 --cores 16 -k
 # copy results off before stopping, e.g. to a GCS bucket:
 gsutil -m cp -r /mnt/data/my_run/output gs://<your-bucket>/my_run/
 # back on your laptop:

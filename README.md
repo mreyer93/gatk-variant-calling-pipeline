@@ -36,6 +36,11 @@ Don't have 400G+ free for CADD? Use `config_call_bam_GATK_local.yaml` /
 for what that trades off, or [cloud/gcp/README.md](cloud/gcp/README.md) to run the full
 pipeline on a GCP VM instead of locally.
 
+**Doing commercial or client work?** CADD is licensed for non-commercial use only, and the full
+configs run it. Use `config_call_bam_GATK_commercial.yaml` /
+`config_call_bam_GATK_germline_commercial.yaml`, or obtain a CADD commercial licence - see
+[annotation licensing](manual/requirements.md#annotation-licensing-and-commercial-use).
+
 ## Worked example
 
 [`example/`](example/README.md) is a complete run on a public matched tumour/normal pair
@@ -66,3 +71,12 @@ Run it yourself (~2 minutes, ~2 MB of public data):
 - `cloud/gcp/` - scripts to run the full pipeline on a GCP VM (see [cloud/gcp/README.md](cloud/gcp/README.md))
 - `archive/` - historical, project-specific analyses and superseded code, kept for reference only
   (not maintained, not guaranteed to run) - see [archive/README.md](archive/README.md)
+
+## License
+
+Apache License 2.0 - see [LICENSE](LICENSE) and [NOTICE](NOTICE).
+
+The workflows here orchestrate third-party software that is downloaded at run time and is not
+redistributed; each tool keeps its own licence. Note in particular that CADD is free for
+non-commercial use only, and that this affects which config you should run for paid work - see
+[annotation licensing](manual/requirements.md#annotation-licensing-and-commercial-use).
