@@ -21,10 +21,7 @@ import snakemake.rules
 import sys
 ################################################################################
 
-# list of chromosomes to process 
-chromosome_list = [f"chr{i}" for i in list(range(1,23))]
-
-# source scripts for various functions
+# source scripts for various functions (setup_germline.smk defines chromosome_list)
 # setup, read config and sample file
 include: "scripts/setup_germline.smk"
 # prepare the bamfiles, including read groups and chr names
@@ -47,7 +44,10 @@ if not config['annotation_only']:
     variant_files.append(expand(join(outdir, '06_GDB/{chromosome}/{chromosome}.vcf'), chromosome=chromosome_list))
     variant_files.append(expand(join(outdir, '07_roh/{chromosome}/{sample}_roh.txt.gz'), chromosome=chromosome_list, sample=sample_list))
     variant_files.append(expand(join(outdir, '08_roh_stats/{chromosome}_roh_stats.tsv'), chromosome=chromosome_list))
-    
+    # the hard-filtered joint calls; before, only the annotation step asked for them, so
+    # with skip_annotation the pipeline stopped at unfiltered per-chromosome VCFs
+    variant_files.append(join(outdir, '07_joint_vcf/germline_calls_hard_filter_select.vcf'))
+
 annotation_files=[]
 if not config['skip_annotation']:
     annotation_files.append(join(outdir, '07_joint_vcf/02_variant_annotations/annotations_combined.vcf'))

@@ -30,6 +30,9 @@ alphamissense_file: '/path/to/data/references/AlphaMissense_hg38.tsv.gz'
 ################################################################################
 # REQUIRED: path to a BED file of this project's capture-panel targets, +/- 100bp, in GRCh38 coordinates
 targets: '/path/to/your/targets_w100_hg38.bed'
+# chromosomes to joint-genotype, one GenomicsDBImport workspace each (default: chr1-chr22).
+# chrX/chrY need ploidy handling for male samples before they are added.
+# chromosomes: ['chr1', 'chr2', 'chr3']
 genome_version: "GRCh38"
 # Broad resource bundle: gs://gcp-public-data--broad-references/hg38/v0/Homo_sapiens_assembly38.fasta
 REF_FILE: '/path/to/data/references/Homo_sapiens_assembly38.fasta'

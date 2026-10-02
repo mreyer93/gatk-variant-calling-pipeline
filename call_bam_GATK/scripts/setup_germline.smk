@@ -1,11 +1,14 @@
+import gzip
 import pandas as pd
 import numpy as np
 from os.path import join, splitext
 from collections import defaultdict
 
 # Setup for the GATK variant calling pipeline
-# list of chromosomes to process 
-chromosome_list = [f"chr{i}" for i in list(range(1,23))]
+# Chromosomes to joint-genotype, one GenomicsDBImport workspace each. Defaults to the
+# autosomes. Every one listed must be in the reference; chrX/chrY also need ploidy
+# handling (HaplotypeCaller -ploidy) for male samples before adding them.
+chromosome_list = config.get('chromosomes', [f"chr{i}" for i in range(1, 23)])
 
 # define parameters from the configfile 
 outdir = config['output_directory']
@@ -72,3 +75,13 @@ def get_final_bam(sample):
     elif config['final_bam']:
         return bam_map[sample]
     return join(outdir, '01_prepare_bam/recalibrate/{}.fixchr.bam'.format(sample))
+
+# Its index. The pipeline's own BAMs are indexed by samtools as <name>.bam.bai; a supplied
+# final_bam may instead carry Picard/GATK's <name>.bai. (HaplotypeCaller used to ask for
+# <name>.bai on every path, which nothing produced for skip_bqsr.)
+def get_final_bai(sample):
+    bam = get_final_bam(sample)
+    if config['final_bam'] and not config['skip_bqsr'] and not os.path.exists(bam + '.bai') \
+            and os.path.exists(splitext(bam)[0] + '.bai'):
+        return splitext(bam)[0] + '.bai'
+    return bam + '.bai'

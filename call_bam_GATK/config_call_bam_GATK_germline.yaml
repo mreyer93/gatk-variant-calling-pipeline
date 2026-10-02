@@ -39,6 +39,9 @@ filter_min_dp: 5
 #    curl http://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.chrom.sizes | awk 'BEGIN {FS=OFS="\t"} {print $1,1,$2}' | grep -v "_" | grep -v "chrM" | grep -v "chrY" | sort -V > targets_whole_genome.bed
 # REQUIRED: path to a BED file of this project's capture-panel targets, +/- 100bp, in GRCh38 coordinates
 targets: '/path/to/your/targets_w100_hg38.bed'
+# chromosomes to joint-genotype, one GenomicsDBImport workspace each (default: chr1-chr22).
+# chrX/chrY need ploidy handling for male samples before they are added.
+# chromosomes: ['chr1', 'chr2', 'chr3']
 # Genome version for CADD scoring. CADD v1.6+ supports GRCh38 (use -g GRCh38 with CADD.sh)
 genome_version: "GRCh38"
 # reference: GRCh38 primary/no-alt analysis set fasta, contigs named 'chr1', 'chr2', etc.

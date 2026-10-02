@@ -13,8 +13,7 @@ rule HaplotypeCaller:
     input: 
         target_input_list,
         bam = lambda wildcards: get_final_bam(wildcards.sample),
-        bai = lambda wildcards: get_final_bam(wildcards.sample)[:-1] + 'i',
-        # bai = rules.bam_index.output,
+        bai = lambda wildcards: get_final_bai(wildcards.sample),
         ref = REF_FILE,
     output:
         gvcf = join(outdir, '05_haplotypecaller/{sample}.g.vcf.gz')
@@ -124,11 +123,59 @@ rule hardFilter:
             -O {output}
     """
 
+# Indels (and mixed SNP/indel sites) get GATK's indel hard filters, which differ from the
+# SNP ones; without this step every indel was dropped from the filtered calls. Thresholds
+# from GATK's "Hard-filtering germline short variants" (article 360035531112).
+rule selectIndels:
+    input:
+        rules.mergeVCFs.output
+    output:
+        join(outdir, '07_joint_vcf/germline_calls_INDEL.vcf')
+    threads:1
+    shell: """
+        gatk SelectVariants \
+            -V {input} \
+            -select-type INDEL \
+            -select-type MIXED \
+            -O {output}
+    """
+
+rule hardFilter_indels:
+    input:
+        rules.selectIndels.output
+    output:
+        join(outdir, '07_joint_vcf/germline_calls_INDEL_hard_filter.vcf')
+    threads:1
+    shell: """
+        gatk VariantFiltration \
+            -V {input} \
+            -filter "QD < 2.0" --filter-name "QD2" \
+            -filter "QUAL < 30.0" --filter-name "QUAL30" \
+            -filter "FS > 200.0" --filter-name "FS200" \
+            -filter "ReadPosRankSum < -20.0" --filter-name "ReadPosRankSum-20" \
+            -O {output}
+    """
+
+# SNPs and indels back together, filter annotations kept
+rule mergeFiltered:
+    input:
+        snps = rules.hardFilter.output,
+        indels = rules.hardFilter_indels.output
+    output:
+        join(outdir, '07_joint_vcf/germline_calls_hard_filter.vcf')
+    threads:1
+    shell: """
+        picard MergeVcfs \
+            I={input.snps} \
+            I={input.indels} \
+            O={output}
+    """
+
 rule hardFilter_select:
     input:
-        rules.hardFilter.output
+        rules.mergeFiltered.output
     output:
-        join(outdir, '07_joint_vcf/germline_calls_SNP_hard_filter_select.vcf')
+        join(outdir, '07_joint_vcf/germline_calls_hard_filter_select.vcf')
     threads:1
     shell: """
         gatk SelectVariants \
@@ -139,7 +186,7 @@ rule hardFilter_select:
 
 rule CollectVariantCallingMetrics:
     input:
-        vcf = rules.hardFilter.output,
+        vcf = rules.mergeFiltered.output,
         dbsnp = dbsnp_file
     output:
         join(outdir, '08_germline_metrics/done.tmp')
@@ -172,50 +219,24 @@ rule roh:
     """
 
 # what's the total amount of ROH that is encompassed in this sample?
-def calculate_roh_df(df):
-    current_state=0
-    counter=0
-    roh_starts = []
-    roh_ends = []
-    for roh, pos in zip(df.roh, df.pos):
-        if current_state==0:
-            if roh ==1:
-                counter +=1 
-                roh_starts.append(pos)
-                current_state=1
-        else: 
-            if roh==0:
-                current_state=0
-                roh_ends.append(pos)
-    roh_calcs = pd.DataFrame({'start': roh_starts[0:len(roh_ends)], 
-                          'end' : roh_ends[0:len(roh_ends)]})
-    roh_calcs['len'] = [a-b for a,b in zip(roh_calcs['end'], roh_calcs['start'])]    
-    return(roh_calcs)
-
+# bcftools roh writes one RG line per run of homozygosity (sample, chromosome, start,
+# end, length, number of markers, quality) and one ST line per site; the stats come from
+# the RG lines, the tool's own segment calls. This used to rebuild segments from the ST
+# lines with read_csv(comment='R'), which cut every line at the first capital R (any
+# sample name containing one, e.g. NORMAL, crashed it) and dropped any run reaching the
+# end of the chromosome.
 rule aggregate_roh:
-    input: 
-        roh_files = expand(join(outdir, '07_roh/{chromosome}/{sample}_roh.txt.gz'),chromosome=chromosome_list, sample=sample_list)
+    input:
+        roh_files = lambda wildcards: expand(join(outdir, '07_roh/{chromosome}/{sample}_roh.txt.gz'),
+                                             chromosome=wildcards.chromosome, sample=sample_list)
     output:
         df = join(outdir, '08_roh_stats/{chromosome}_roh_stats.tsv')
-    params:
-        basedir = join(outdir, '07_roh/{chromosome}')
     threads: 1
-    run: 
-        basedir = params.basedir
-        roh_calcs_dict = {}
-        total_roh_length_dict = {}
-        roh_number_dict = {}
-        for sample in sample_list:
-            f = join(basedir, f"{sample}_roh.txt.gz")
-            df = pd.read_csv(f, sep='\t', skiprows=5, comment='R', header=None)
-            df.columns = ['class', 'sample', 'chr', 'pos', 'roh', 'prob']
-            roh_calcs = calculate_roh_df(df)
-            total_roh_length = np.sum(roh_calcs['len'])
-            roh_number = roh_calcs.shape[0]    
-            total_roh_length_dict[sample] = total_roh_length
-            roh_number_dict[sample] = roh_number
-        roh_stats_df = pd.DataFrame({'sample': sample_list,
-                                'roh_number': [roh_number_dict[s] for s in sample_list],
-                                'roh_total_length': [total_roh_length_dict[s] for s in sample_list]})
-        roh_stats_df.index = roh_stats_df['sample']
-        roh_stats_df.to_csv(output[0], sep='\t')
+    run:
+        rows = []
+        for sample, f in zip(sample_list, input.roh_files):
+            with gzip.open(f, 'rt') as fh:
+                lengths = [int(line.split('\t')[5]) for line in fh if line.startswith('RG\t')]
+            rows.append({'sample': sample, 'roh_number': len(lengths),
+                         'roh_total_length': sum(lengths)})
+        pd.DataFrame(rows).to_csv(output.df, sep='\t', index=False)

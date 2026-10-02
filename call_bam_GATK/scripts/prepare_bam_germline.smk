@@ -56,19 +56,20 @@ rule bqsr:
     output: 
         table = join(outdir, '01_prepare_bam/recalibrate/{sample}.table'),
         bam = join(outdir, '01_prepare_bam/recalibrate/{sample}.fixchr.bam'),
-        bai = join(outdir, '01_prepare_bam/recalibrate/{sample}.fixchr.bai')
+        bai = join(outdir, '01_prepare_bam/recalibrate/{sample}.fixchr.bam.bai')
     shell: """
         gatk BaseRecalibrator \
             -I {input.bam} \
             -R {input.ref} \
             --known-sites {input.dbsnp} \
             -O {output.table} \
-            -L {input.targets} 
+            -L {input.targets}
 
         gatk ApplyBQSR \
             -R {input.ref} \
             -I {input.bam} \
             --bqsr-recal-file {output.table} \
             -O {output.bam}
+        samtools index {output.bam}
     """
 

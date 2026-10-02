@@ -7,7 +7,8 @@ pipeline or another source) and performs the following steps:
 2. Base Quality Score Recalibration (BQSR)
 3. Germline variant calling per-sample with HaplotypeCaller (GVCF mode)
 4. GenomicsDBImport and joint genotyping, run per-chromosome
-5. Hard-filtering of the joint-genotyped SNPs
+5. Hard-filtering of the joint-genotyped SNPs and indels, each with GATK's recommended
+   thresholds ([Hard-filtering germline short variants](https://gatk.broadinstitute.org/hc/en-us/articles/360035531112))
 6. Runs of homozygosity (ROH) detection with `bcftools roh`, per chromosome per sample, plus
    aggregated ROH stats
 7. Variant annotation with CADD scoring (or AlphaMissense - see below) and GATK Funcotator,
@@ -20,7 +21,9 @@ sample, bamfile
 
 Reference files and the capture-panel target BED must be specified - see [manual/requirements.md](requirements.md) (there is no default target file, since different projects use different panels). The CADD scoring install from that page must also be performed. If you have already created the variant files and just want to re-run annotation with different parameters, the `annotation_only` flag in the config file allows for this.
 
-Optional config flags (all default to `False` if omitted): `skip_bqsr` (use the read-group-fixed bam directly, skipping BQSR), `final_bam` (use the input bam as-is, skipping both BQSR and chromosome-fixing), `skip_annotation` (stop after variant calling, skip the annotation step).
+Optional config flags (all default to `False` if omitted): `skip_bqsr` (use the read-group-fixed bam directly, skipping BQSR), `final_bam` (use the input bam as-is, skipping both BQSR and chromosome-fixing; it must be indexed, as `.bam.bai` or `.bai`), `skip_annotation` (stop after the filtered calls, skip the annotation step).
+
+`chromosomes` lists the chromosomes to joint-genotype, one GenomicsDBImport workspace each; it defaults to `chr1`-`chr22`. Every one listed must be in the reference. Adding `chrX`/`chrY` also needs ploidy handling for male samples (HaplotypeCaller's `-ploidy`), which the pipeline does not do yet.
 
 ##### CADD licensing: commercial and client work
 CADD is free for non-commercial use only, and the full config runs it. For paid client work
@@ -43,6 +46,11 @@ non-coding variants will have no `AM_pathogenicity`/`AM_class` value even with t
 tradeoff is specific to germline - see `manual/somatic.md` for why the somatic pipeline's
 local config skips deleteriousness scoring entirely instead of doing the same substitution.
 
+#### Test it
+`./test/run_test_germline.sh` runs the whole pipeline (annotation off) on the small public
+tumour/normal pair the somatic smoke test uses, treated as two germline samples, and checks
+that the outputs are well formed. It does not measure accuracy: that data has no truth set.
+
 #### Run the pipeline
 ```
 snakemake -s /PATH/TO/pipeline/call_bam_GATK/call_bam_GATK_germline.snakefile --configfile config_call_bam_GATK_germline.yaml --use-conda --jobs 32 --cores 32 -k
@@ -63,7 +71,8 @@ Lower `--jobs`/`--cores` to match your machine - e.g. `--jobs 4 --cores 4` on a 
 08_roh_stats: aggregated ROH statistics per chromosome
 
 07_joint_vcf
-  germline_calls_SNP_hard_filter_select.vcf: hard-filtered, SNP-only joint-genotyped calls
+  germline_calls_hard_filter_select.vcf: joint-genotyped SNPs and indels that pass the hard filters
+  germline_calls_hard_filter.vcf: the same calls before selection, with the failed filter named in FILTER
   02_variant_annotations
     annotations_combined.vcf: CADD (or AlphaMissense, if skip_cadd is set) + Funcotator
       annotations combined into one file - look for the CADD_phred column, or

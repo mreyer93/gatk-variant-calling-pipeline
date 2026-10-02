@@ -22,6 +22,7 @@ dependencies:
   - multiqc
   - pandas
   - picard>=3.1
+  - pigz         # germline ROH and CADD rules; was used but never declared
   - r-base
   - r-dplyr      # smooth_depth.R; used but never declared (found on a clean env)
   - r-ggplot2
