@@ -1,6 +1,14 @@
 # steps to prepare the bam files for variant calling
 
 # first, add read groups to the samples that need it
+# Read groups are set with samtools rather than Picard AddOrReplaceReadGroups: Picard
+# reads and rewrites the whole BAM on one core, ~25 min for a 250-million-read exome on
+# Apple Silicon (its Intel compression library does not load there), samtools does it
+# multithreaded. The old @RG header lines are dropped first, as Picard drops them;
+# otherwise their sample names stay in the header and GATK sees an extra, empty sample.
+# The records are identical to Picard's apart from where the RG tag sits.
+prep_threads = int(config.get('prep_threads', 4))
+
 rule add_read_groups:
     input: lambda wildcards: bam_map[wildcards.sample]
     output: temporary(join(outdir, '01_prepare_bam/add_readgroups/{sample}.bam'))
@@ -9,14 +17,14 @@ rule add_read_groups:
         RGLB = lambda wildcards: metadata.loc[wildcards.sample, 'library'],
         RGPL = lambda wildcards: metadata.loc[wildcards.sample, 'platform'],
         RGPU = lambda wildcards: metadata.loc[wildcards.sample, 'platform_unit'],
+    threads: prep_threads
     shell: """
-        picard AddOrReplaceReadGroups \
-            -I {input} \
-            -O {output} \
-            --RGSM {params.RGSM} \
-            --RGLB {params.RGLB} \
-            --RGPL {params.RGPL} \
-            --RGPU {params.RGPU}
+        samtools view -H {input} | grep -v '^@RG' > {output}.header.sam
+        samtools reheader {output}.header.sam {input} \
+            | samtools addreplacerg -@ {threads} -m overwrite_all \
+                -r '@RG\\tID:1\\tSM:{params.RGSM}\\tLB:{params.RGLB}\\tPL:{params.RGPL}\\tPU:{params.RGPU}' \
+                -o {output} -
+        rm {output}.header.sam
     """
 
 # fix chromosome annotations: adds chr to all chromosomes in the bam files so 
@@ -26,6 +34,7 @@ rule fix_chromosomes:
     output: 
         bam = temporary(join(outdir, '01_prepare_bam/add_readgroups/{sample}.fixchr.bam')),
         bai = temporary(join(outdir, '01_prepare_bam/add_readgroups/{sample}.fixchr.bam.bai'))
+    threads: prep_threads
     shell: """
         samtools view -H {input} |\
             sed -e 's/SN:1/SN:chr1/' | sed -e 's/SN:2/SN:chr2/' | \
@@ -41,7 +50,7 @@ rule fix_chromosomes:
             sed -e 's/SN:21/SN:chr21/' | sed -e 's/SN:22/SN:chr22/' | \
             sed -e 's/SN:X/SN:chrX/' | sed -e 's/SN:Y/SN:chrY/' | \
             sed -e 's/SN:MT/SN:chrM/' | samtools reheader - {input} > {output.bam}
-        samtools index {output.bam}
+        samtools index -@ {threads} {output.bam}
     """
 
 # base quality score recalibration

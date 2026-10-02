@@ -1,19 +1,27 @@
 # steps to prepare the bam files for variant calling
 
 # first, add read groups to the samples that need it
+# Read groups are set with samtools rather than Picard AddOrReplaceReadGroups: Picard
+# reads and rewrites the whole BAM on one core, ~25 min for a 250-million-read exome on
+# Apple Silicon (its Intel compression library does not load there), samtools does it
+# multithreaded. The old @RG header lines are dropped first, as Picard drops them;
+# otherwise their sample names stay in the header and GATK sees an extra, empty sample.
+# The records are identical to Picard's apart from where the RG tag sits.
+prep_threads = int(config.get('prep_threads', 4))
+
 rule add_read_groups:
     input: lambda wildcards: bam_map[wildcards.sample]
     output: temporary(join(outdir, '01_prepare_bam/add_readgroups/{sample}.bam'))
     params:
         RGSM = lambda wildcards: wildcards.sample
+    threads: prep_threads
     shell: """
-        picard AddOrReplaceReadGroups \
-            -I {input} \
-            -O {output} \
-            --RGSM {params.RGSM} \
-            --RGLB l1 \
-            --RGPL pl1 \
-            --RGPU pu1
+        samtools view -H {input} | grep -v '^@RG' > {output}.header.sam
+        samtools reheader {output}.header.sam {input} \
+            | samtools addreplacerg -@ {threads} -m overwrite_all \
+                -r '@RG\\tID:1\\tSM:{params.RGSM}\\tLB:l1\\tPL:pl1\\tPU:pu1' \
+                -o {output} -
+        rm {output}.header.sam
     """
 
 # fix chromosome annotations: adds chr to all chromosomes in the bam files so 
