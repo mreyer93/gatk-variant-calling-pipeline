@@ -33,7 +33,11 @@ def _report_inputs(wildcards):
 
 
 rule somatic_report_html:
-    input: _report_inputs
+    input:
+        deps = _report_inputs,
+        # the template and its helpers, so that editing either re-renders the report
+        rmd = join(report_scripts_dir, 'somatic_report.Rmd'),
+        helpers = join(report_scripts_dir, 'report_helpers.R'),
     output: join(outdir, '09_report/somatic_report.html')
     log: join(outdir, '09_report/logs/somatic_report_html.log')
     params:
@@ -54,7 +58,10 @@ rule somatic_report_html:
 
 
 rule somatic_report_pdf:
-    input: _report_inputs
+    input:
+        deps = _report_inputs,
+        rmd = join(report_scripts_dir, 'somatic_report.Rmd'),
+        helpers = join(report_scripts_dir, 'report_helpers.R'),
     output: join(outdir, '09_report/somatic_report.pdf')
     log: join(outdir, '09_report/logs/somatic_report_pdf.log')
     params:

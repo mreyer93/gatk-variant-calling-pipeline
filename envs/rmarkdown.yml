@@ -1,14 +1,19 @@
-# Used for the per-rule `conda:` directives in process_reads (e.g. the primer_check
-# QC report). The old pins here (r-tidyr=1.1.2, r-broom=0.7.4, r-tibble=3.0.6,
-# icu=58) were just whatever was installed in 2021 rather than a documented
-# compatibility requirement, and icu=58 in particular is old enough to be hard to
-# solve against current conda-forge builds - relaxed to unpinned/current.
+# Used by the somatic report rules (call_bam_GATK/scripts/report.smk) and the per-rule
+# `conda:` directives in process_reads (e.g. the primer_check QC report). The old pins
+# here (r-tidyr=1.1.2, r-broom=0.7.4, r-tibble=3.0.6, icu=58) were just whatever was
+# installed in 2021 rather than a documented compatibility requirement, and icu=58 in
+# particular is old enough to be hard to solve against current conda-forge builds -
+# relaxed to unpinned/current.
+#
+# conda-forge only. Anaconda's `r` channel, formerly listed first here, resolved
+# rmarkdown 2.25, whose PDF output fails whenever output_dir is not the .Rmd's own
+# directory (it ran LaTeX in the input directory and then could not find the PDF);
+# rmarkdown 2.32 fixed that.
 name: rmarkdown
 channels:
-  - r
   - conda-forge
 dependencies:
-  - r-rmarkdown
+  - r-rmarkdown>=2.32   # PDF into output_dir; see above
   - r-data.table
   - r-dplyr
   - r-tidyr

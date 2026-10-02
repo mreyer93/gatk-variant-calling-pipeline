@@ -114,15 +114,21 @@ load_contamination <- function(contam_dir) {
     data.table::rbindlist(rows)
 }
 
-# Joined smoothed-depth table (one column per sample after the annotation columns)
-load_depth_summary <- function(depth_file) {
+# Joined smoothed-depth table: the target BED's columns, the columns smooth_depth.R adds
+# (size, i, chr_i), then one column per sample. When the sample names are known only
+# those columns are summarised; otherwise every column not known to be annotation is.
+load_depth_summary <- function(depth_file, samples = NULL) {
     if (!file.exists(depth_file)) return(NULL)
     dt <- tryCatch(data.table::fread(depth_file, showProgress = FALSE),
                    error = function(e) NULL)
     if (is.null(dt) || nrow(dt) == 0) return(NULL)
-    meta_cols <- intersect(c("name", "chr", "start", "end", "strand", "exon",
-                             "length", "gene"), names(dt))
-    sample_cols <- setdiff(names(dt), meta_cols)
+    if (length(samples) > 0) {
+        sample_cols <- intersect(as.character(samples), names(dt))
+    } else {
+        meta_cols <- intersect(c("name", "chr", "start", "end", "strand", "exon",
+                                 "length", "gene", "size", "i", "chr_i"), names(dt))
+        sample_cols <- setdiff(names(dt), meta_cols)
+    }
     if (length(sample_cols) == 0) return(NULL)
     rows <- lapply(sample_cols, function(s) {
         v <- suppressWarnings(as.numeric(dt[[s]]))
@@ -138,18 +144,22 @@ load_depth_summary <- function(depth_file) {
     data.table::rbindlist(rows)
 }
 
-# FACETS purity/ploidy estimates, one small text file per patient-timepoint
+# FACETS purity/ploidy estimates, one small table per patient-timepoint, written by
+# facets_plotting.R with columns purity, ploidy, dipLogR and seed. write.table's row
+# names leave the header one field short; fread names that extra column V1 and warns.
 load_facets_purity <- function(facets_dir) {
     if (!dir.exists(facets_dir)) return(NULL)
     files <- list.files(facets_dir, pattern = "_purity\\.txt$", full.names = TRUE)
     if (length(files) == 0) return(NULL)
     rows <- lapply(files, function(f) {
-        txt <- tryCatch(readLines(f, warn = FALSE), error = function(e) character(0))
-        if (length(txt) == 0) return(NULL)
-        nums <- suppressWarnings(as.numeric(regmatches(txt, regexpr("[0-9.]+", txt))))
+        dt <- tryCatch(suppressWarnings(data.table::fread(f, showProgress = FALSE)),
+                       error = function(e) NULL)
+        if (is.null(dt) || nrow(dt) == 0) return(NULL)
+        num <- function(col) if (col %in% names(dt)) suppressWarnings(as.numeric(dt[[col]][1])) else NA_real_
         data.table(patient_tp = sub("_purity\\.txt$", "", basename(f)),
-                   value = paste(txt, collapse = "; "),
-                   first_numeric = if (length(nums)) nums[1] else NA_real_)
+                   purity = num("purity"),
+                   ploidy = num("ploidy"),
+                   dipLogR = num("dipLogR"))
     })
     rows <- Filter(Negate(is.null), rows)
     if (length(rows) == 0) return(NULL)
@@ -171,7 +181,10 @@ REPORT_PALETTE <- c("#4C72B0", "#DD8452", "#55A868", "#C44E52", "#8172B3",
                     "#937860", "#DA8BC3", "#8C8C8C", "#CCB974", "#64B5CD")
 
 # Small helper for the report: emit a short italic note when a section has no data,
-# instead of erroring or silently rendering an empty plot.
+# instead of erroring or silently rendering an empty plot. Returned as markdown rather
+# than cat(): knitr renders cat() output in an ordinary chunk as "##" console text.
+# Like any knitr output, it only appears as the value of a top-level expression.
 note_missing <- function(what) {
-    cat("\n*", what, "was not available for this run - this section is omitted.*\n\n")
+    knitr::asis_output(paste0("\n*", what,
+                              ": not available for this run, so this section is omitted.*\n\n"))
 }

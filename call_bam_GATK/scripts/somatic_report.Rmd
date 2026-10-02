@@ -48,20 +48,20 @@ contam_dir <- file.path(outdir, "01_prepare_bam/CalculateContamination")
 depth_file <- file.path(outdir, "01_prepare_bam/depth_smoothed_join.tsv")
 facets_dir <- file.path(outdir, "04_FACETS")
 
-variants  <- load_annotated_variants(annot_dir)
-scores    <- load_new_scores(scores_dir)
-vcf_counts<- load_vcf_counts(called_dir)
-tvn_counts<- load_vcf_counts(tvn_dir)
-contam    <- load_contamination(contam_dir)
-depth     <- load_depth_summary(depth_file)
-purity    <- load_facets_purity(facets_dir)
-
 metadata <- NULL
 if (nzchar(params$metadata) && file.exists(params$metadata)) {
     metadata <- tryCatch(
         data.table::fread(params$metadata, sep = "\t", showProgress = FALSE),
         error = function(e) NULL)
 }
+
+variants  <- load_annotated_variants(annot_dir)
+scores    <- load_new_scores(scores_dir)
+vcf_counts<- load_vcf_counts(called_dir)
+tvn_counts<- load_vcf_counts(tvn_dir)
+contam    <- load_contamination(contam_dir)
+depth     <- load_depth_summary(depth_file, samples = metadata$sample)
+purity    <- load_facets_purity(facets_dir)
 
 annotated_mode <- !is.null(variants)
 
@@ -349,10 +349,16 @@ if (is.null(purity)) {
     note_missing("FACETS copy-number output")
 } else {
     write_summary(purity, "facets_purity")
-    kable(purity[, .(patient_tp, value)],
-          col.names = c("Patient / timepoint", "FACETS output"),
-          caption = "FACETS purity/ploidy estimates")
-    cat("\nPer-sample copy-number and LOH plots are in `04_FACETS/` as one PDF per patient-timepoint.\n")
+    kable(purity, digits = 3,
+          col.names = c("Patient / timepoint", "Purity", "Ploidy", "dipLogR"),
+          caption = "FACETS purity and ploidy estimates")
+}
+if (!is.null(purity)) {
+    knitr::asis_output(paste0(
+        "\nCopy-number and LOH segments for each patient-timepoint are in `04_FACETS/` ",
+        "(`_cncf.tsv`, with `loh` and `cn_neutral_loh` columns), alongside one PDF of ",
+        "plots per patient-timepoint. Purity is NA when the tumour shows no ",
+        "copy-number change for FACETS to estimate it from.\n"))
 }
 ```
 

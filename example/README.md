@@ -79,7 +79,7 @@ explaining why, rather than being silently dropped.
 ## Full output
 
 The run also produces a self-contained HTML report
-(`results/09_report/somatic_report.html`) covering run configuration, depth and
+(`results/09_report/somatic_report.html`, with a PDF copy alongside) covering run configuration, depth and
 contamination QC, variant counts, allele-fraction distributions and provenance, with
 interpretation caveats stated inline. Because annotation is disabled here, the
 gene-level and deleteriousness sections are omitted automatically rather than failing —

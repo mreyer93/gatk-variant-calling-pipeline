@@ -38,6 +38,10 @@ fi
 # Use every available core by default; set CORES to cap it.
 CORES="${CORES:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)}"
 
+# The PDF report needs tectonic, which downloads its TeX support files on first use and
+# caches them. Set REPORT_PDF=0 to skip it (e.g. offline).
+REPORT_PDF=$([[ "${REPORT_PDF:-1}" == "0" ]] && echo False || echo True)
+
 D=test/data
 REF="$D/reference"; FQ="$D/fastq"; BAM="$D/bam"
 RAW="https://raw.githubusercontent.com/nf-core/test-datasets/sarek"
@@ -147,7 +151,7 @@ dbsnp_file: "$REF/dbsnp_138.chr.vcf.gz"
 dbsnp_common_file: "$REF/dbsnp_138.chr.vcf.gz"
 gnomad_file: "$REF/gnomAD.chr.vcf.gz"
 make_report: True
-report_pdf: False
+report_pdf: $REPORT_PDF
 EOF
 
 echo "==> Running pipeline"
@@ -163,6 +167,36 @@ if [[ -z "$DRY_RUN" ]]; then
              "$D/results/09_report/somatic_report.html"; do
         if [[ -s "$f" ]]; then echo "  OK   $f"; else echo "  MISS $f"; fail=1; fi
     done
+    if [[ "$REPORT_PDF" == "True" ]]; then
+        f="$D/results/09_report/somatic_report.pdf"
+        if [[ -s "$f" ]]; then echo "  OK   $f"; else echo "  MISS $f"; fail=1; fi
+    fi
+    # Report content: the tables this run should produce (annotation and FACETS are off),
+    # no "##" console text (cat() in an ordinary chunk), and a depth table of samples only
+    # (it once also listed the size, i and chr_i columns of the depth file as samples).
+    if [[ $fail -eq 0 ]]; then
+        if python3 - "$D/results/09_report/somatic_report.html" \
+            "$D/results/09_report/summary_tables/depth_per_sample.tsv" <<'PY'
+import html, sys
+page = html.unescape(open(sys.argv[1], encoding="utf-8").read())
+problems = []
+if "<code>## " in page:
+    problems.append("console output ('##') leaked into the report")
+for cap in ["Run configuration", "On-target sequencing depth per sample",
+            "GATK CalculateContamination estimates", "Variant counts per sample",
+            "Paired tumour-vs-normal variant counts", "Provenance"]:
+    if cap not in page:
+        problems.append("table missing: " + cap)
+rows = [line.split("\t")[0] for line in open(sys.argv[2]).read().splitlines()[1:]]
+if sorted(rows) != ["NORMAL", "TUMOUR"]:
+    problems.append(f"depth table lists {rows}, not the two samples")
+for p in problems:
+    print("  REPORT " + p)
+sys.exit(1 if problems else 0)
+PY
+        then echo "  OK   report tables present, depth table lists the two samples, no console output"
+        else fail=1; fi
+    fi
     echo
     if [[ $fail -eq 0 ]]; then
         t=$(awk '!/^#/ && $7=="PASS"' "$D/results/02_variants_reference/01_gatk_variant_calling/filtered/TUMOUR_filtered.vcf" | wc -l | tr -d ' ')
