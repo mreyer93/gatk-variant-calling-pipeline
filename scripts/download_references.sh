@@ -39,6 +39,9 @@ OUTDIR="${ARGS[0]:-references}"
 
 BASE_REF="https://storage.googleapis.com/gcp-public-data--broad-references/hg38/v0"
 BASE_SOMATIC="https://storage.googleapis.com/gatk-best-practices/somatic-hg38"
+# NCBI dbSNP build 151 common variants (GRCh38): the SNP list the FACETS authors recommend
+# for snp-pileup. Dense enough for heterozygous-SNP (LOH) calls on exomes and panels.
+BASE_DBSNP="https://ftp.ncbi.nih.gov/snp/organisms/human_9606_b151_GRCh38p7/VCF"
 
 # name, url, approx size (for the dry-run summary only - not enforced)
 FILES=(
@@ -49,8 +52,8 @@ FILES=(
     "dbsnp/Homo_sapiens_assembly38.dbsnp138.vcf.idx|$BASE_REF/Homo_sapiens_assembly38.dbsnp138.vcf.idx|~2.5M"
     "af-only-gnomad.hg38.vcf.gz|$BASE_SOMATIC/af-only-gnomad.hg38.vcf.gz|~3.0G"
     "af-only-gnomad.hg38.vcf.gz.tbi|$BASE_SOMATIC/af-only-gnomad.hg38.vcf.gz.tbi|~2M"
-    "dbsnp/small_exac_common_3.hg38.vcf.gz|$BASE_SOMATIC/small_exac_common_3.hg38.vcf.gz|~1M"
-    "dbsnp/small_exac_common_3.hg38.vcf.gz.tbi|$BASE_SOMATIC/small_exac_common_3.hg38.vcf.gz.tbi|~30K"
+    "dbsnp/00-common_all.GRCh38.b151.vcf.gz|$BASE_DBSNP/00-common_all.vcf.gz|~1.6G"
+    "dbsnp/00-common_all.GRCh38.b151.vcf.gz.tbi|$BASE_DBSNP/00-common_all.vcf.gz.tbi|~2M"
 )
 
 if $WITH_AM; then
@@ -64,13 +67,13 @@ for entry in "${FILES[@]}"; do
     printf '  %-55s %s\n' "$name" "$size"
 done
 echo "-----------------------------------------------"
-TOTAL_SIZE="~17G"
-if $WITH_AM; then TOTAL_SIZE="~17.6G"; fi
+TOTAL_SIZE="~18.6G"
+if $WITH_AM; then TOTAL_SIZE="~19.2G"; fi
 echo "Total: $TOTAL_SIZE. This maps onto config_call_bam_GATK.yaml / config_processing.yaml as:"
 echo "  REF_FILE / reference_file  -> $OUTDIR/Homo_sapiens_assembly38.fasta"
 echo "  dbsnp_file                 -> $OUTDIR/dbsnp/Homo_sapiens_assembly38.dbsnp138.vcf"
 echo "  gnomad_file                -> $OUTDIR/af-only-gnomad.hg38.vcf.gz"
-echo "  dbsnp_common_file          -> $OUTDIR/dbsnp/small_exac_common_3.hg38.vcf.gz"
+echo "  dbsnp_common_file (FACETS) -> $OUTDIR/dbsnp/00-common_all.GRCh38.b151.vcf.gz"
 if $WITH_AM; then
     echo "  alphamissense_file (germline config) -> $OUTDIR/AlphaMissense_hg38.tsv.gz"
 fi

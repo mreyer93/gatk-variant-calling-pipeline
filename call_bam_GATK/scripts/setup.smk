@@ -153,3 +153,9 @@ if not('report_pdf' in config):
 # unaffected. Set False to run tumour-vs-reference calling only.
 if not('call_tumor_normal' in config):
     config['call_tumor_normal'] = True
+# run_facets: allele-specific copy number, purity/ploidy and LOH (including copy-neutral LOH)
+# with FACETS, for every patient/timepoint that has both a T and an N sample. Needs the
+# dense SNP list in dbsnp_common_file. The smoke test turns it off: its BAMs cover too few
+# heterozygous SNPs for a fit, so test/test_facets.sh checks FACETS separately.
+if not('run_facets' in config):
+    config['run_facets'] = True

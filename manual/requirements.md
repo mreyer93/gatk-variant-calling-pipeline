@@ -27,8 +27,9 @@ see below) - download them per machine/project with:
 ```
 ./scripts/download_references.sh references/
 ```
-This fetches the GRCh38 fasta (+ index/dict), dbSNP, gnomAD af-only sites, and the FACETS common-SNP
-file (~17G total) from Broad's public resource buckets into a local `references/` directory, which
+This fetches the GRCh38 fasta (+ index/dict), dbSNP, gnomAD af-only sites (from Broad's public
+resource buckets) and the FACETS SNP list, NCBI's dbSNP build 151 common variants (~18.6G total),
+into a local `references/` directory, which
 is already excluded via `.gitignore` - these files are too large for version control and are
 reused across projects, not committed per-repo. Run `./scripts/download_references.sh --dry-run`
 first to see the download plan and sizes without fetching anything.

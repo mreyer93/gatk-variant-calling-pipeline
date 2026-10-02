@@ -59,6 +59,29 @@ instead (`config_call_bam_GATK_local.yaml` is set up this way) to get variant ca
 and FACETS without CADD/Funcotator/scoring, and run the full pipeline with CADD on a machine
 that has the disk space for it.
 
+##### Copy number and LOH (FACETS)
+FACETS estimates tumour purity, ploidy and allele-specific copy number for each tumour/normal
+pair. The allele-specific part is what calls loss of heterozygosity, including copy-neutral LOH,
+which total copy number alone cannot see. Rule `facets_build` compiles snp-pileup and installs the
+facets R package from the pinned upstream release (v0.6.2) inside `envs/facets.yml`, so FACETS
+runs the same way on Linux and on Apple Silicon. bioconda cannot be used for this on a Mac: it has
+no macOS build of snp-pileup, and its Apple Silicon r-facets does not load. The genome build that
+FACETS' GC correction uses follows `genome_version`.
+
+Before reading the output:
+- *The SNP list matters.* `dbsnp_common_file` should be the NCBI dbSNP common-variant VCF that
+  `scripts/download_references.sh` fetches, as the FACETS authors recommend. A sparse list leaves
+  more segments with fewer than 15 heterozygous SNPs, and those get no LOH call.
+- *One tumour per normal.* When a patient-timepoint has more than one tumour sample, their counts
+  are averaged into one tumour before fitting. FACETS assumes a single tumour per normal, so give
+  separate biopsies separate timepoints.
+- *Panels.* `facets_snp_nbhd` (default 250, FACETS' own) spaces the SNPs used to one per window of
+  roughly the insert size. The FACETS maintainer recommends 250 for exomes, about 150 for targeted
+  panels or short inserts and about 500 for WGS (mskcc/facets issues #61 and #81).
+
+`test/test_facets.sh` checks both halves: snp-pileup's read counts against samtools mpileup, and
+the fit against the stomach example in the FACETS vignette.
+
 #### Run the pipeline
 Similar to the other pipelines, you can run somatic variant calling with a command like:
 ```
@@ -134,7 +157,12 @@ The following output directories and files are generated from this pipeline:
       filtered: A combined annotated vcf-like file for each sample. Filters applied to remove low-quality variants
       unfiltered: same, but without the filters applied
 
-04_FACETS: data file and plots from running the FACETS algorithm for LOH and CNA detection.
+04_FACETS: allele-specific copy number from FACETS, one set per patient-timepoint that has both a tumour and a normal (run_facets, on by default)
+  {patient_tp}.csv.gz: snp-pileup read counts at the dbSNP common sites, normal first
+  {patient_tp}_purity.txt: tumour purity, ploidy, dipLogR, and the seed of the fit
+  {patient_tp}_cncf.tsv: the segment calls: total (tcn.em) and minor (lcn.em) copy number per segment, with loh and cn_neutral_loh flags. lcn.em is NA where a segment has fewer than 15 heterozygous SNPs, so no LOH call is possible there
+  {patient_tp}.pdf: the FACETS genome plot and the logR/logOR diagnostic
+  tools: snp-pileup and the facets R package, built from the pinned upstream release
 
 09_report: client-facing summary report (see above)
   somatic_report.html / .pdf: the report itself

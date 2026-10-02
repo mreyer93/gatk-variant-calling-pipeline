@@ -1,12 +1,21 @@
 # FACETS copy-number / LOH calling (call_bam_GATK/scripts/FACETS.smk).
-# Kept separate from environment.yml because bioconda builds snp-pileup for Linux only
-# (linux-64, linux-aarch64). On macOS this env does not solve; run FACETS on Linux or
-# the GCP path (cloud/gcp/). Snakemake builds it itself for the FACETS rules.
+# A build environment rather than the tools themselves: rule facets_build compiles
+# snp-pileup and installs the facets R package from the pinned upstream release
+# (github.com/mskcc/facets). bioconda's packages are not used because neither works on
+# Apple Silicon: snp-pileup is built for Linux only (it includes glibc's argp.h), and the
+# osx-arm64 r-facets build ships facets.so where conda-forge's R looks for facets.dylib,
+# so the package never loads. Building from source gives the same FACETS on every platform.
 name: facets
 channels:
   - conda-forge
   - bioconda
 dependencies:
-  - snp-pileup>=0.6.2,<0.7.0a0
+  - c-compiler
+  - cxx-compiler
+  - fortran-compiler   # facets has Fortran sources
+  - make
+  - curl
+  - htslib
+  - argp-standalone    # argp.h for snp-pileup on macOS; glibc provides it on Linux
   - r-base
-  - r-facets
+  - r-pctgcdata        # GC content tables facets uses for GC correction

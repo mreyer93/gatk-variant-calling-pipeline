@@ -61,6 +61,9 @@ if not config['annotation_only']:
     # tumour and a normal sample. Skipped automatically when no such pairs exist.
     if config['call_tumor_normal'] and tn_pt_tps:
         variant_files.append(expand(join(outdir, '03_variants_TvN/01_gatk_variant_calling/filtered/{patient_tp}_filtered.vcf'), patient_tp=tn_pt_tps))
+    # FACETS copy number and LOH for the same tumour/normal pairs (scripts/FACETS.smk)
+    if config['run_facets'] and tn_pt_tps:
+        variant_files.append(expand(join(outdir, '04_FACETS/{patient_tp}_cncf.tsv'), patient_tp=tn_pt_tps))
 
 annotation_files = []
 if not config['skip_annotation']:
@@ -83,4 +86,3 @@ rule all:
         variant_files,
         annotation_files,
         report_files,
-        #expand(join(outdir, '04_FACETS/{patient_tp}.pdf'), patient_tp=tn_pt_tps)

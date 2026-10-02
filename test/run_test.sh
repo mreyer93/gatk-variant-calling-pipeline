@@ -134,6 +134,7 @@ annotation_only: False
 skip_bqsr: False
 skip_annotation: True
 call_tumor_normal: True
+run_facets: False   # a few kilobases of chr1-3 is too few heterozygous SNPs; see test/test_facets.sh
 filter_min_af: 0.02
 filter_min_dp: 5
 filter_GATK: ['PASS', 'normal_artifact']

@@ -50,8 +50,9 @@ funcotator_data_path: '/path/to/data/references/funcotator_dataSources.v1.7.2020
 # dbsnp file - used with BQSR. Broad resource bundle: Homo_sapiens_assembly38.dbsnp138.vcf
 dbsnp_file: '/path/to/data/references/dbsnp/Homo_sapiens_assembly38.dbsnp138.vcf.gz'
 # dbsnp common file - used with facets (common biallelic SNP sites for pileup).
-# GATK best-practices somatic-hg38 bundle: small_exac_common_3.hg38.vcf.gz
-dbsnp_common_file: '/path/to/data/references/dbsnp/small_exac_common_3.hg38.vcf.gz'
+# SNP sites for FACETS (snp-pileup): NCBI dbSNP b151 common variants, the list the FACETS
+# authors recommend; fetched by scripts/download_references.sh
+dbsnp_common_file: '/path/to/data/references/dbsnp/00-common_all.GRCh38.b151.vcf.gz'
 # gnomad file: sites of common polymorphisms, used as the Mutect2 germline resource.
 # GATK best-practices somatic-hg38 bundle: af-only-gnomad.hg38.vcf.gz
 gnomad_file: '/path/to/data/references/af-only-gnomad.hg38.vcf.gz'
