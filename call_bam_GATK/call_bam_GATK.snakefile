@@ -29,6 +29,8 @@ import sys
 # source scripts for various functions
 # setup, read config and sample file
 include: "scripts/setup.smk"
+# split the targets into shards so Mutect2 runs in parallel
+include: "scripts/scatter.smk"
 # prepare the bamfiles, including read groups and chr names
 include: "scripts/prepare_bam.smk"
 # variant calling steps: tumor vs reference

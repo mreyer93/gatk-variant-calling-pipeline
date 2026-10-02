@@ -82,6 +82,16 @@ Before reading the output:
 `test/test_facets.sh` checks both halves: snp-pileup's read counts against samtools mpileup, and
 the fit against the stomach example in the FACETS vignette.
 
+#### Performance
+Mutect2 runs once per shard of the target region, in parallel, and the shards are gathered
+before filtering (`scatter_count`, default 8; shards are whole, merged target intervals, never split).
+Scattering does not change the calls: `test/test_scatter.sh` checks that one shard and four give
+identical results. On Apple Silicon, GATK cannot load Intel's native PairHMM library and falls back to its single-threaded
+Java implementation, so `--native-pair-hmm-threads` does nothing there and each shard keeps one core
+busy (`gatk_threads` defaults to 1 on arm64 and 2 on x86, where the native PairHMM uses threads).
+Each GATK job declares its Java heap as `mem_mb`, so `--resources mem_mb=<MB>` keeps concurrent jobs
+within the machine's memory, e.g. `--resources mem_mb=56000` on a 64 GB Mac.
+
 #### Run the pipeline
 Similar to the other pipelines, you can run somatic variant calling with a command like:
 ```

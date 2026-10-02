@@ -1,31 +1,41 @@
 #####################################################################################################
-### TUMOR VS NORMAL CALLING #########################################################################
+### GERMLINE CALLING ################################################################################
 #####################################################################################################
-# use empty string for targets if targets file is not specified
-if targets != '':
-    target_input_list = [targets]
-    targets_string = '-L ' + targets
-else:
-    target_input_list = []
-    targets_string = ''
+# HaplotypeCaller runs once per interval shard (scripts/scatter.smk), limited to the
+# targets the shard covers; each sample's shard GVCFs are gathered into one.
+hc_dir = join(outdir, '05_haplotypecaller')
 
 rule HaplotypeCaller:
     input: 
-        target_input_list,
         bam = lambda wildcards: get_final_bam(wildcards.sample),
         bai = lambda wildcards: get_final_bai(wildcards.sample),
         ref = REF_FILE,
+        intervals = join(outdir, '00_scatter/{shard}.bed'),
     output:
-        gvcf = join(outdir, '05_haplotypecaller/{sample}.g.vcf.gz')
-    threads: 8
+        gvcf = temp(join(hc_dir, 'scatter/{shard}/{sample}.g.vcf.gz')),
+        tbi = temp(join(hc_dir, 'scatter/{shard}/{sample}.g.vcf.gz.tbi')),
+    threads: gatk_threads
+    resources: mem_mb = gatk_java_mem_gb * 1024 + 1024
     shell: """
-        gatk HaplotypeCaller --java-options "-Xmx7g" \
+        gatk HaplotypeCaller --java-options "-Xmx{gatk_java_mem_gb}g" \
             -R {input.ref} \
             -I {input.bam} \
             -O {output.gvcf} \
             -ERC GVCF \
-            {targets_string} \
+            -L {input.intervals} \
             --native-pair-hmm-threads {threads} 
+    """
+
+rule HaplotypeCaller_gather:
+    input:
+        gvcfs = expand(join(hc_dir, 'scatter/{shard}/{{sample}}.g.vcf.gz'), shard=SHARDS),
+        tbis = expand(join(hc_dir, 'scatter/{shard}/{{sample}}.g.vcf.gz.tbi'), shard=SHARDS),
+    output:
+        gvcf = join(hc_dir, '{sample}.g.vcf.gz'),
+    params:
+        gvcfs = lambda wildcards, input: ' '.join('-I ' + f for f in input.gvcfs),
+    shell: """
+        gatk MergeVcfs {params.gvcfs} -O {output.gvcf}
     """
 
 rule create_map_file:
@@ -33,12 +43,18 @@ rule create_map_file:
         expand(join(outdir, '05_haplotypecaller/{sample}.g.vcf.gz'), sample=sample_list)
     output:
         gvcf = join(outdir, '06_GDB/sample_map.txt'),
-    threads: 2
+    threads: 1
     run: 
         with open(output[0], "w") as outf:
             for sample in sample_list:
                 gvcf_file = join(outdir, f'05_haplotypecaller/{sample}.g.vcf.gz')
                 outf.write(f"{sample}\t{gvcf_file}\n")
+
+# One workspace per chromosome. --reader-threads only helps when many GVCFs are read over
+# a slow network, so a single thread is reserved; the heap is set in the config
+# (genomicsdb_java_mem_gb) and declared as mem_mb, so `--resources mem_mb=...` can stop too
+# many imports sharing memory at once on a large cohort.
+genomicsdb_java_mem_gb = int(config.get('genomicsdb_java_mem_gb', 8))
 
 rule GenomicsDBImport:
     input: 
@@ -48,10 +64,11 @@ rule GenomicsDBImport:
         GDB = join(outdir, '06_GDB/{chromosome}/FILE'),
     params:
         outdir = join(outdir, '06_GDB/{chromosome}')
-    threads: 4
+    threads: 1
+    resources: mem_mb = genomicsdb_java_mem_gb * 1024 + 2048
     shell: """
         rm -r {params.outdir}
-        gatk --java-options "-Xmx20g" GenomicsDBImport \
+        gatk --java-options "-Xmx{genomicsdb_java_mem_gb}g" GenomicsDBImport \
             --reference {input.ref} \
             --sample-name-map {input.sample_name_map} \
             --genomicsdb-workspace-path {params.outdir} \
@@ -61,6 +78,7 @@ rule GenomicsDBImport:
         touch {output}
     """
 
+# single-threaded: GenotypeGVCFs takes no thread option
 rule GenotypeGVCFs:
     input: 
         ref = REF_FILE,
@@ -69,9 +87,10 @@ rule GenotypeGVCFs:
         vcf = join(outdir, '06_GDB/{chromosome}/{chromosome}.vcf'),
     params:
         workspace = join(outdir, '06_GDB/{chromosome}')
-    threads: 4
+    threads: 1
+    resources: mem_mb = gatk_java_mem_gb * 1024 + 1024
     shell: """
-        gatk GenotypeGVCFs \
+        gatk --java-options "-Xmx{gatk_java_mem_gb}g" GenotypeGVCFs \
             --reference {input.ref} \
             --variant gendb://{params.workspace} \
             --output {output.vcf}

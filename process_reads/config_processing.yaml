@@ -25,3 +25,11 @@ reference_file: '/path/to/data/references/Homo_sapiens_assembly38.fasta'
 target_bed: '/path/to/your/targets_hg38.bed'
 target_bed_w100: '/path/to/your/targets_w100_hg38.bed'
 target_bed_w1000: '/path/to/your/targets_w1000_hg38.bed'
+
+################################################################################
+### PERFORMANCE (all optional) #################################################
+################################################################################
+# threads for bwa mem, samtools sort and samtools markdup, per sample
+# align_threads: 8
+# memory samtools sort holds per thread before spilling to disk
+# sort_mem_per_thread: '1G'

@@ -16,6 +16,13 @@ snakemake -s /PATH/TO/pipeline/process_reads/processing.snakefile --configfile c
 ```
 The `--use-conda` directive specifies that specific versions of the software used in this pipeline will be downloaded for each rule that requires them. To view a summary of which steps will be executed before running the pipeline, add the `-n` flag for a dry-run.
 
+### Performance
+`align_threads` (default 8) sets the threads for bwa mem, samtools sort and samtools markdup per
+sample, and `sort_mem_per_thread` (default `1G`) how much samtools sort holds in memory per thread before
+spilling to disk, which it does beside the output BAMs. The alignment job declares its memory as `mem_mb`
+(bwa's ~6 GB human index plus the sort buffers), so `--resources mem_mb=<MB>` limits how many samples
+align at once.
+
 ### Test it
 `./test/run_test_processing.sh` runs the whole pipeline on the small public tumour/normal pair
 the somatic smoke test uses, against a made-up four-target panel, and checks the outputs. Feeding

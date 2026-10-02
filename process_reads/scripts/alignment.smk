@@ -12,14 +12,19 @@ rule align_to_ref:
         mkdup=join(outdir, "02_align/bam/{sample}.mkdup.bam"),
     params:
         rg=r"@RG\tID:{sample}\tSM:{sample}\tLB:lib1\tPL:ILLUMINA\tPU:unit1",
-    threads: 4
+        # samtools sort holds this much per thread in memory before spilling to disk,
+        # and spills beside the output rather than in the working directory
+        sort_mem = config.get('sort_mem_per_thread', '1G'),
+        sort_tmp = join(outdir, "02_align/bam/{sample}.sorttmp"),
+    threads: int(config.get('align_threads', 8))
+    resources: mem_mb = lambda wildcards, threads: threads * 1200 + 6000
     shell: """
         bwa mem -R '{params.rg}' -t {threads} {input.bwa_index} {input.fwd} {input.rev} \
         | samtools view -b -F12 - \
         | samtools fixmate -m - - \
-        | samtools sort -O BAM \
+        | samtools sort -@ {threads} -m {params.sort_mem} -T {params.sort_tmp} -O BAM \
         | tee {output.withdup} \
-        | samtools markdup -r - {output.mkdup}
+        | samtools markdup -@ {threads} -r - {output.mkdup}
     """
 
 ################################################################################

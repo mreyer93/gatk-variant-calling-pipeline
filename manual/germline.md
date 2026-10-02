@@ -51,6 +51,16 @@ local config skips deleteriousness scoring entirely instead of doing the same su
 tumour/normal pair the somatic smoke test uses, treated as two germline samples, and checks
 that the outputs are well formed. It does not measure accuracy: that data has no truth set.
 
+#### Performance
+HaplotypeCaller runs once per shard of the target region, in parallel, and each sample's shard
+GVCFs are gathered into one (`scatter_count`, default 8; shards are whole, merged target intervals,
+never split). Joint genotyping is already split by chromosome. Scattering does not change the calls:
+`test/test_scatter.sh` checks that one shard and four give identical joint calls. On Apple Silicon, GATK cannot load Intel's native PairHMM library and falls back to its single-threaded
+Java implementation, so `--native-pair-hmm-threads` does nothing there and each shard keeps one core
+busy (`gatk_threads` defaults to 1 on arm64 and 2 on x86, where the native PairHMM uses threads).
+GenomicsDBImport's heap is `genomicsdb_java_mem_gb` (default 8). Each GATK job declares its Java heap as `mem_mb`, so `--resources mem_mb=<MB>` keeps concurrent jobs
+within the machine's memory, e.g. `--resources mem_mb=56000` on a 64 GB Mac.
+
 #### Run the pipeline
 ```
 snakemake -s /PATH/TO/pipeline/call_bam_GATK/call_bam_GATK_germline.snakefile --configfile config_call_bam_GATK_germline.yaml --use-conda --jobs 32 --cores 32 -k

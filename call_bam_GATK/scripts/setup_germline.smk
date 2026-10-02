@@ -25,6 +25,8 @@ if 'target_bed_w100' in config:
     targets = config['target_bed_w100']
 else:
     targets = config['targets']
+# HaplotypeCaller is scattered over these (scripts/scatter.smk)
+scatter_targets_bed = targets
 metadata = pd.read_csv(config["bam_metadata"], delimiter = '\t', index_col=False)
 req_columns = ['sample', 'bamfile']
 if not(all([r in list(metadata.columns) for r in req_columns])):

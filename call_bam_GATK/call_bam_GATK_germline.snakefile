@@ -24,6 +24,8 @@ import sys
 # source scripts for various functions (setup_germline.smk defines chromosome_list)
 # setup, read config and sample file
 include: "scripts/setup_germline.smk"
+# split the targets into shards so HaplotypeCaller runs in parallel
+include: "scripts/scatter.smk"
 # prepare the bamfiles, including read groups and chr names
 include: "scripts/prepare_bam_germline.smk"
 # variant calling steps: haplotypecaller

@@ -59,7 +59,7 @@ rule funcotator:
         vcf = join(outdir, '07_joint_vcf/02_variant_annotations/funcotator.vcf')
     params:
         funcotator_data_path = config['funcotator_data_path']
-    threads: 4
+    threads: 1   # Funcotator is single-threaded
     shell: """
         gatk Funcotator \
             --variant {input.vcf} \

@@ -71,7 +71,9 @@ gsutil -m cp -r /mnt/data/my_run/output gs://<your-bucket>/my_run/
 # back on your laptop:
 ./cloud/gcp/stop_vm.sh
 ```
-`--jobs`/`--cores` should match `MACHINE_TYPE` in `config.sh` (16 for the n2-standard-16 default).
+`--jobs`/`--cores` should match `MACHINE_TYPE` in `config.sh` (16 for the n2-standard-16 default). Set
+`scatter_count` in the run config to the same number, so Mutect2 and HaplotypeCaller split the targets
+into enough shards to use every core (it defaults to 8).
 
 ### If the spot VM gets preempted mid-run
 Spot VMs can be reclaimed by GCP at any time (that's why they're ~70% cheaper). If that

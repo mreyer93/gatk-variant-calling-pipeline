@@ -60,7 +60,7 @@ rule funcotator_TvN:
         vcf = join(outdir, '03_variants_TvN/02_variant_annotations/annotate_Funcotator/{patient_tp}_filtered_fucnc.vcf'),
     params:
         funcotator_data_path = config['funcotator_data_path']
-    threads: 4
+    threads: 1   # Funcotator is single-threaded
     shell: """
         gatk Funcotator \
             --variant {input.vcf} \

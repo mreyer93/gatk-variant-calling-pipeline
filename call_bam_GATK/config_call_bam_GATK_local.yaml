@@ -47,3 +47,15 @@ dbsnp_common_file: '/path/to/data/references/dbsnp/00-common_all.GRCh38.b151.vcf
 # GATK best-practices somatic-hg38 bundle: af-only-gnomad.hg38.vcf.gz - still needed,
 # this is used as the Mutect2 --germline-resource, not just for CADD/annotation
 gnomad_file: '/path/to/data/references/af-only-gnomad.hg38.vcf.gz'
+
+################################################################################
+### PERFORMANCE (all optional) #################################################
+################################################################################
+# Mutect2 runs once per shard of the targets, in parallel. Raise this with the core count
+# (e.g. 16 on the GCP n2-standard-16); changing it reruns the callers.
+# scatter_count: 8
+# Threads per caller shard. Default 1 on Apple Silicon, where GATK's PairHMM is single-
+# threaded Java; 2 on x86, where Intel's native PairHMM uses threads.
+# gatk_threads: 1
+# Java heap per Mutect2 shard, in GB
+# gatk_java_mem_gb: 4

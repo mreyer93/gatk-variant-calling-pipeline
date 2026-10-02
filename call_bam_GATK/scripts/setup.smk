@@ -34,6 +34,8 @@ if 'target_bed_w100' in config:
     target_bed_w100 = config['target_bed_w100']
 else:
     target_bed_w100 = config['targets']
+# Mutect2 is scattered over these (scripts/scatter.smk)
+scatter_targets_bed = target_bed_w100
 # targets with 100bp windows for depth calling
 if 'targets_depth' in config:
     targets_depth = config['targets_depth']
