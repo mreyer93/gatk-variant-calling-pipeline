@@ -24,7 +24,19 @@ DRY_RUN=""
 # Snakemake manages the conda envs by default. Set USE_CONDA=0 if gatk/samtools/bwa/R
 # are already on PATH.
 CONDA_FLAG="--use-conda"
+# Snakemake 7 defaults to mamba. Plain conda has used the same libmamba solver since
+# 23.10, so fall back to it when mamba is not installed (e.g. a stock Anaconda).
+command -v mamba >/dev/null 2>&1 || CONDA_FLAG="$CONDA_FLAG --conda-frontend conda"
 [[ "${USE_CONDA:-1}" == "0" ]] && CONDA_FLAG=""
+# R cannot run from a path containing a space (its launcher scripts word-split R_HOME),
+# and Snakemake builds its conda envs inside the repo by default. If this checkout's path
+# has a space, keep the envs somewhere that does not.
+if [[ -n "$CONDA_FLAG" && "$PWD" == *" "* ]]; then
+    CONDA_FLAG="$CONDA_FLAG --conda-prefix ${SNAKEMAKE_CONDA_PREFIX:-$HOME/.cache/snakemake-conda}"
+fi
+
+# Use every available core by default; set CORES to cap it.
+CORES="${CORES:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)}"
 
 D=test/data
 REF="$D/reference"; FQ="$D/fastq"; BAM="$D/bam"
@@ -94,7 +106,7 @@ if [[ ! -s "$BAM/TUMOUR.bam" || ! -s "$BAM/NORMAL.bam" ]]; then
         for r1 in "$FQ"/tiny_${s}_L*_R1_xxx.fastq.gz; do
             [[ -e "$r1" ]] || continue
             r2="${r1/_R1_/_R2_}"; lane=$(basename "$r1" | sed -E 's/.*_(L[0-9]+)_.*/\1/')
-            bwa mem -t "${CORES:-4}" \
+            bwa mem -t "$CORES" \
                 -R "@RG\tID:${lane}\tSM:${name}\tLB:lib1\tPL:ILLUMINA\tPU:${lane}" \
                 "$REF/genome.chr.fasta" "$r1" "$r2" 2>/dev/null \
                 | samtools sort -o "$BAM/${name}_${lane}.bam" -
@@ -139,7 +151,7 @@ EOF
 
 echo "==> Running pipeline"
 snakemake -s call_bam_GATK/call_bam_GATK.snakefile \
-    --configfile "$D/config_test.yaml" --cores "${CORES:-4}" $CONDA_FLAG $DRY_RUN
+    --configfile "$D/config_test.yaml" --cores "$CORES" $CONDA_FLAG $DRY_RUN
 
 if [[ -z "$DRY_RUN" ]]; then
     echo; echo "==> Checking expected outputs"

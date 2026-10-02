@@ -1,0 +1,12 @@
+# FACETS copy-number / LOH calling (call_bam_GATK/scripts/FACETS.smk).
+# Kept separate from environment.yml because bioconda builds snp-pileup for Linux only
+# (linux-64, linux-aarch64). On macOS this env does not solve; run FACETS on Linux or
+# the GCP path (cloud/gcp/). Snakemake builds it itself for the FACETS rules.
+name: facets
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - snp-pileup>=0.6.2,<0.7.0a0
+  - r-base
+  - r-facets

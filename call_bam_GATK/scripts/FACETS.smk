@@ -1,8 +1,9 @@
 #####################################################################################################
 ### FACETS FOR CNA AND LOH ##########################################################################
 #####################################################################################################
-# snp-pileup comes from the `snp-pileup` conda package (envs/environment.yml) rather
-# than a vendored binary - install it into the pipeline's conda env so it's on PATH.
+# snp-pileup comes from the `snp-pileup` conda package rather than a vendored binary.
+# Both rules use envs/facets.yml (--use-conda). bioconda builds snp-pileup for Linux
+# only, so on macOS run FACETS on Linux or via cloud/gcp/.
 
 # takes in normal and tumor samples for the same patient
 rule facets_snp_pileup:
@@ -13,6 +14,7 @@ rule facets_snp_pileup:
         csv = join(outdir, '04_FACETS/{patient_tp}.csv.gz')
     params:
         bam_string = lambda wildcards: ' '.join(pt_tp_to_final_bams[wildcards.patient_tp]),
+    conda: "../../envs/facets.yml"
     shell: """
         set +u
         # options used
@@ -38,4 +40,5 @@ rule facets_snp_plot:
     output:
         pdf = join(outdir, '04_FACETS/{patient_tp}.pdf'),
         txt = join(outdir, '04_FACETS/{patient_tp}_purity.txt')
+    conda: "../../envs/facets.yml"
     script: "facets_plotting.R"

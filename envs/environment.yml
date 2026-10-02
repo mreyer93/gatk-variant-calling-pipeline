@@ -10,6 +10,8 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
+  # FACETS (snp-pileup, r-facets) lives in envs/facets.yml: snp-pileup is built for
+  # Linux only on bioconda, so listing it here made this env uninstallable on any Mac.
   - bcftools=1.23
   - bedtools
   - bwa>=0.7.17
@@ -21,13 +23,12 @@ dependencies:
   - pandas
   - picard>=3.1
   - r-base
-  - r-facets
+  - r-dplyr      # smooth_depth.R; used but never declared (found on a clean env)
   - r-ggplot2
   - r-knitr
   - r-reshape2
   - r-rmarkdown
   - samtools=1.23
-  - snp-pileup>=0.6.2,<0.7.0a0
   # Snakemake made significant CLI/workflow changes across major versions (7 -> 8 -> 9).
   # Pinned to the 7.x line, which this pipeline has been verified against with a dry-run
   # (snakemake -n) of both call_bam_GATK snakefiles and the process_reads snakefile.
