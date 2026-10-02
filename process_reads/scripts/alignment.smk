@@ -32,7 +32,8 @@ rule count_aligned_reads:
         for i in {input}; do
             samtools index "$i"
             bn=$(basename "$i" | sed 's/.bam//g')
-            echo "$bn\t$(samtools view -c -F 260 $i)" >> {output}
+            # printf, not echo: only some shells (e.g. macOS /bin/bash) expand \t in echo
+            printf '%s\t%s\n' "$bn" "$(samtools view -c -F 260 "$i")" >> {output}
         done
     """
 
@@ -99,14 +100,15 @@ rule flagstats_offtarget:
         bam = join(outdir, "02_align/offtarget/{sample}_off.bam"),
         flagstat = join(outdir, "02_align/offtarget/{sample}_off.bam.flagstat")
     params:
-        sample = "{sample}",
+        # beside the outputs, not in the working directory
+        genome = join(outdir, "02_align/offtarget/{sample}.genome"),
         flagstat_out = join(outdir, "02_align/out_flagstat_offtarget.txt")
     shell: """
-        cut -f 1,2 {input.ref} > {params.sample}.genome
-        intersectBed -sorted -g {params.sample}.genome -v -abam {input.bam} -b {input.target_bed_w1000} > {output.bam}
+        cut -f 1,2 {input.ref} > {params.genome}
+        intersectBed -sorted -g {params.genome} -v -abam {input.bam} -b {input.target_bed_w1000} > {output.bam}
         echo {output.bam} > {output.flagstat}
         samtools flagstat {output.bam} >> {output.flagstat}
-        rm {params.sample}.genome
+        rm {params.genome}
     """
 
 rule flagstats_aggregate:
@@ -120,9 +122,13 @@ rule flagstats_aggregate:
 
 ################################################################################
 # Rmarkdown QC script
+# the report reads the coverage and off-target files directly, so they are its inputs;
+# with only the BAMs declared it could render before they existed
 rule primer_check:
     input:
-        expand(join(outdir, "02_align/bam/{sample}.mkdup.bam"), sample=samples)
+        bams = expand(join(outdir, "02_align/bam/{sample}.mkdup.bam"), sample=samples),
+        cov = expand(join(outdir, "02_align/cov/{sample}.mkdup.bam.w100.cov"), sample=samples),
+        offtarget = expand(join(outdir, "02_align/offtarget/{sample}_off.bam.flagstat"), sample=samples),
     output: 
         join(outdir, 'primer_check.pdf')
     params: 

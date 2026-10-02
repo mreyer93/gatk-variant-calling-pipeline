@@ -21,7 +21,9 @@ rule build_ref_faidx:
 # Create sequence dictionary for GATK variant calling.
 rule create_ref_dict:
     input:  REF_FILE
-    output: REF_FILE.split(".")[0] + ".dict"
+    # GATK names the dictionary after the fasta minus its extension (genome.chr.fasta ->
+    # genome.chr.dict); split(".")[0] cut at the first dot anywhere in the path
+    output: splitext(REF_FILE)[0] + ".dict"
     shell: """
         gatk CreateSequenceDictionary --REFERENCE {input}
     """

@@ -8,9 +8,10 @@ rule read_symlinks:
     output:
         fwd = join(outdir, '00_read_symlinks/{sample}_R1.fastq.gz'),
         rev = join(outdir, '00_read_symlinks/{sample}_R2.fastq.gz'),
+    # quoted: the resolved path is absolute and may contain spaces
     shell: """
-        ln -s $(readlink -f {input[0]}) {output[0]}
-        ln -s $(readlink -f {input[1]}) {output[1]}
+        ln -s "$(readlink -f {input[0]})" {output[0]}
+        ln -s "$(readlink -f {input[1]})" {output[1]}
     """
 ################################################################################
 rule pre_fastqc:
@@ -89,21 +90,3 @@ rule post_multiqc:
         multiqc --force {params.indir} -o {params.outdir}
     """
 
-################################################################################
-# after coverage across exons is calculated, run the QC stat script 
-# via Rmarkdown
-rule coverage_report:
-    input:
-        join(outdir, "02_align/flagstat_offtarget.txt"),
-        expand(join(outdir, "02_align/cov/{sample}.mkdup.bam.w100.cov"), sample=samples)
-    output:
-        join(outdir, 'coverage_quality_report.pdf')
-    params:
-        outdir = outdir,
-        target_bed = target_bed,
-        sample_reads = sample_reads_f
-    conda: "envs/rmarkdown.yml"
-
-    script: """
-        scripts/primer_check.Rmd
-    """

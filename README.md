@@ -56,11 +56,12 @@ Run it yourself (~2 minutes, ~2 MB of public data):
 ./test/run_test.sh
 ```
 
-The germline pipeline has its own smoke test on the same data (under a minute once the
-somatic test has prepared it):
+The germline and read-processing pipelines have their own smoke tests on the same data
+(under a minute each once the somatic test has prepared it):
 
 ```bash
 ./test/run_test_germline.sh
+./test/run_test_processing.sh
 ```
 
 ## User Manual

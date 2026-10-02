@@ -45,5 +45,5 @@ if(any(check_list)):
 read_map = {a: [b,c] for a,b,c in zip(samples, read1_list, read2_list)}
 
 # Ensure all files are gzipped
-if not all([a.endswith(".gz") for a in read1_list]) and all([a.endswith(".gz") for a in read2_list]):
+if not (all([a.endswith(".gz") for a in read1_list]) and all([a.endswith(".gz") for a in read2_list])):
     sys.exit('All input read files must be gzipped!')
