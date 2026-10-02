@@ -72,19 +72,46 @@ rule bqsr:
         samtools index {output.bam}
     """
 
-# Calculate depth based on targets 
-rule depth:
-    input: 
-        bam = lambda wildcards: get_final_bam(wildcards.sample),
+# Windows for the depth summary: 200 bp windows stepped by 100 bp inside each target
+# region (the whole region when it is shorter), each named by its region's line number in
+# the target file so smooth_depth.R can match them back.
+rule depth_windows:
+    input:
         targets = targets_depth,
-    output: 
-        join(outdir, '01_prepare_bam/depth/{sample}.tsv.gz'),
+    output:
+        join(outdir, '01_prepare_bam/depth/windows.bed'),
+    params:
+        w = 200,
+        s = 100,
+    run:
+        n = 0
+        with open(input.targets) as f, open(output[0], 'w') as out:
+            for line in f:
+                if not line.strip() or line.startswith(('#', 'track', 'browser')):
+                    continue
+                n += 1
+                c, start, end = line.split('\t')[:3]
+                start, end = int(start), int(end)
+                if end - start <= params.w:
+                    out.write(f'{c}\t{start}\t{end}\t{n}\n')
+                    continue
+                ws = start
+                while ws + params.w <= end:
+                    out.write(f'{c}\t{ws}\t{ws + params.w}\t{n}\n')
+                    ws += params.s
+
+# Calculate depth based on targets: summed per-base depth in each window, read through the
+# BAM index (same read filters as samtools depth). This replaced a per-base `samtools
+# depth -a` table, about 134 million lines per sample on an exome.
+rule depth:
+    input:
+        bam = lambda wildcards: get_final_bam(wildcards.sample),
+        bai = lambda wildcards: get_final_bam(wildcards.sample) + '.bai',
+        windows = rules.depth_windows.output,
+    output:
+        join(outdir, '01_prepare_bam/depth/{sample}_windows.tsv.gz'),
     shell: """
-        samtools depth \
-        -d 0 \
-        -a \
-        -b {input.targets} \
-        {input.bam} | gzip > {output}
+        samtools bedcov -j {input.windows} {input.bam} | gzip > {output}
         """
 
 # smooth depth result
