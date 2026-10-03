@@ -99,6 +99,7 @@ padded targets, 250 to 280 million reads per sample) on a 10-core MacBook Pro M1
 |---|---|---|
 | Read groups, per sample | 24.8 min | 4.7 min |
 | Calling stage (Mutect2 for each sample against the reference and tumour vs normal, to filtered calls) | 294 min | 78 min |
+| Depth summary, both samples (295,462 targets) | failed on this target file (repeated region names) | 31 min, alongside calling |
 
 BQSR is unchanged and is now the longest preparation step (about 55 minutes per sample, two
 single-threaded passes over the BAM).
