@@ -7,6 +7,11 @@
 # genotypes) must be identical between the two: in the three somatic call sets (each
 # sample against the reference, and tumour vs normal) and in the germline joint calls.
 #
+# Exact equality holds here because no position in this data has more than 50 reads
+# starting at it. Where one does, GATK keeps 50 chosen with a random sequence shared across
+# the run, so that site's result depends on what was processed before, scattered or not; on
+# a real exome this moved one PASS call per call set (see manual/somatic.md).
+#
 # Usage: ./test/test_scatter.sh
 
 set -euo pipefail

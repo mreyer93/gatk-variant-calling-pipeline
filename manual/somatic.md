@@ -84,13 +84,32 @@ the fit against the stomach example in the FACETS vignette.
 
 #### Performance
 Mutect2 runs once per shard of the target region, in parallel, and the shards are gathered
-before filtering (`scatter_count`, default 8; shards are whole, merged target intervals, never split).
-Scattering does not change the calls: `test/test_scatter.sh` checks that one shard and four give
-identical results. On Apple Silicon, GATK cannot load Intel's native PairHMM library and falls back to its single-threaded
-Java implementation, so `--native-pair-hmm-threads` does nothing there and each shard keeps one core
-busy (`gatk_threads` defaults to 1 on arm64 and 2 on x86, where the native PairHMM uses threads).
-Each GATK job declares its Java heap as `mem_mb`, so `--resources mem_mb=<MB>` keeps concurrent jobs
-within the machine's memory, e.g. `--resources mem_mb=56000` on a 64 GB Mac.
+before filtering (`scatter_count`, default 8; shards are whole, merged target intervals, never
+split). On Apple Silicon, GATK cannot load Intel's native PairHMM library and falls back to its
+single-threaded Java implementation, so `--native-pair-hmm-threads` does nothing there and each
+shard keeps one core busy (`gatk_threads` defaults to 1 on arm64 and 2 on x86, where the native
+PairHMM uses threads). Read groups are set with multithreaded samtools (`prep_threads`, default
+4). Each GATK job declares its Java heap as `mem_mb`, so `--resources mem_mb=<MB>` keeps
+concurrent jobs within the machine's memory, e.g. `--resources mem_mb=56000` on a 64 GB Mac.
+
+Measured on a whole exome (the SEQC2 HCC1395 tumour/normal pair, Agilent V6+UTR, 134 Mb of
+padded targets, 250 to 280 million reads per sample) on a 10-core MacBook Pro M1 Max:
+
+| Step | Unscattered, Picard | 8 shards, samtools |
+|---|---|---|
+| Read groups, per sample | 24.8 min | 4.7 min |
+| Calling stage (Mutect2 for each sample against the reference and tumour vs normal, to filtered calls) | 294 min | 78 min |
+
+BQSR is unchanged and is now the longest preparation step (about 55 minutes per sample, two
+single-threaded passes over the BAM).
+
+Does scattering change the calls? On the test data, no: `test/test_scatter.sh` runs one shard
+against four and every record is identical. On the exome, the two runs differ only at sites where
+more than 50 reads start at the same position. GATK keeps 50 of them, chosen with a random
+sequence shared across the whole run, so the result there depends on what was processed before,
+as in any scattered GATK run. The PASS calls differed by one in each call set: tumour vs normal
+(3,608 shared of 3,609), tumour against the reference (9,934 of 9,935) and normal against the
+reference (3,369 of 3,370).
 
 #### Run the pipeline
 Similar to the other pipelines, you can run somatic variant calling with a command like:

@@ -53,13 +53,30 @@ that the outputs are well formed. It does not measure accuracy: that data has no
 
 #### Performance
 HaplotypeCaller runs once per shard of the target region, in parallel, and each sample's shard
-GVCFs are gathered into one (`scatter_count`, default 8; shards are whole, merged target intervals,
-never split). Joint genotyping is already split by chromosome. Scattering does not change the calls:
-`test/test_scatter.sh` checks that one shard and four give identical joint calls. On Apple Silicon, GATK cannot load Intel's native PairHMM library and falls back to its single-threaded
-Java implementation, so `--native-pair-hmm-threads` does nothing there and each shard keeps one core
+GVCFs are gathered into one (`scatter_count`, default 8; shards are whole, merged target
+intervals, never split). Joint genotyping is already split by chromosome. On Apple Silicon, GATK
+cannot load Intel's native PairHMM library and falls back to its single-threaded Java
+implementation, so `--native-pair-hmm-threads` does nothing there and each shard keeps one core
 busy (`gatk_threads` defaults to 1 on arm64 and 2 on x86, where the native PairHMM uses threads).
-GenomicsDBImport's heap is `genomicsdb_java_mem_gb` (default 8). Each GATK job declares its Java heap as `mem_mb`, so `--resources mem_mb=<MB>` keeps concurrent jobs
-within the machine's memory, e.g. `--resources mem_mb=56000` on a 64 GB Mac.
+Read groups are set with multithreaded samtools (`prep_threads`, default 4). GenomicsDBImport's
+heap is `genomicsdb_java_mem_gb` (default 8). Each GATK job declares its Java heap as `mem_mb`,
+so `--resources mem_mb=<MB>` keeps concurrent jobs within the machine's memory, e.g.
+`--resources mem_mb=56000` on a 64 GB Mac.
+
+Measured on one whole exome (the SEQC2 HCC1395BL normal, Agilent V6+UTR, 134 Mb of padded
+targets, 279 million reads) on a 10-core MacBook Pro M1 Max, from the recalibrated BAM to the
+filtered joint calls: 228 minutes unscattered, 40 minutes with 8 shards. HaplotypeCaller is
+nearly all of it either way.
+
+Does scattering change the calls? On the test data, no: `test/test_scatter.sh` runs one shard
+against four and every record is identical. On the exome, no genotype changed, and 125,965 of
+the 125,968 PASS calls are shared (3 differ on each side). The differences come from two places
+where GATK itself uses random numbers, so they appear between any two runs that process regions
+in a different order:
+- Sites where more than 50 reads start at the same position: GATK keeps 50, chosen at random
+  (325 records with small differences in depth, QUAL or the strand and rank-sum annotations).
+- QD above 35: GATK replaces it with a random draw around 30, and the draws shift after any
+  earlier difference (1,421 records where QD alone differs).
 
 #### Run the pipeline
 ```
