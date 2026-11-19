@@ -7,7 +7,9 @@ somatic reference call set, inside the capture targets that lie in its high-conf
 (80.7 Mb). Recall depends mostly on the variant allele fraction (VAF): the pipeline calls
 98.6% of true SNVs at a VAF of 40% or more, and 23.7% of those below 5%. Two thirds of the
 missed SNVs were emitted by Mutect2 and then removed by FilterMutectCalls, most of them by its
-contamination filter.
+contamination filter. FACETS on the same pair fits purity 0.948 and ploidy 3.11, close to SEQC2's
+own FACETS run on this library pair (0.937 and 3.18), and agrees with it on LOH across 99.9% of
+the shared autosomes.
 
 | Variant | Truth | PASS calls | True positives | Precision (95% interval) | Recall (95% interval) | F1 |
 |---|---|---|---|---|---|---|
@@ -181,11 +183,68 @@ They are not caller noise. The high-confidence regions contain no chrX and leave
 0.4 to 56.6 Mb and chr16 from 46.6 to 89.9 Mb, and 1,602 of the 1,661 calls are there. Most are
 common germline polymorphisms (gnomAD allele frequency of 1% or more: 724 of 817 on chr6, 390 of
 446 on chr16, 274 of 339 on chrX) with high tumour VAF, and the normal has no supporting read at
-95 to 97% of them. That is the pattern expected where the normal line carries only one parental
-copy (loss of heterozygosity in HCC1395BL): inherited variants on the other copy are present in
-the tumour and absent from the normal, so they look somatic. SEQC2's own callers made the same
-calls and graded most of them HighConf in the superset. It is a property of this reference pair,
-and it is why these regions cannot be scored.
+95 to 97% of them. SEQC2 found that the normal line HCC1395BL has lost one chrX and one copy
+each of 6p and 16q (karyotype and SNP array; Fang et al. 2021, Extended Data Figs. 5b and 6), so
+inherited variants on the lost copies are present in the tumour and absent from the normal, and
+look somatic. SEQC2's own callers made the same calls and graded most of them HighConf in the
+superset; SEQC2 then removed these three arms from the high-confidence regions as germline LOH.
+It is a property of this reference pair, not of the caller.
+
+#### Copy number (FACETS)
+
+With `run_facets: True`, the pipeline's FACETS step fits the pair in 8.8 minutes (including
+building FACETS) at purity 0.948 and ploidy 3.11, with FACETS' default segmentation (cval 25
+and 150, 250 bp SNP neighbourhood, at least 15 heterozygous SNPs per segment). SEQC2 published
+its own FACETS segment tables for all 12 exome replicates and ASCAT segments for this tumour
+library. `benchmark/seqc2/compare_facets.R` recovers purity and ploidy from those tables by
+FACETS' own definitions; on the pipeline's table the recovery reproduces the reported fit
+(purity 0.952 against 0.948, ploidy 3.11 against 3.11).
+
+| Call | Purity | Ploidy | Share of genome in LOH |
+|---|---|---|---|
+| Pipeline FACETS | 0.948 | 3.11 | 0.585 |
+| SEQC2 FACETS, same library pair (`WES_IL_1`) | 0.937 | 3.18 | 0.595 |
+| SEQC2 FACETS, 9 of the 12 exome replicates | 0.87 to 0.96 | 3.07 to 3.28 | 0.585 to 0.611 |
+| SEQC2 FACETS, the other 3 replicates | 0.83 to 0.90 | 5.44 to 6.18 | 0.587 to 0.593 |
+| SEQC2 ASCAT, same tumour library | not in the table | 3.84 (mean total copy number) | 0.659 |
+
+The three outlying replicates found the doubled solution (ploidy about twice as high, with the
+same share of the genome in LOH); the pipeline lands where most replicates did. Every exome
+FACETS fit, SEQC2's and the pipeline's, puts purity below the 99% that SEQC2 reports from
+copy-number analysis of the whole-genome data. SEQC2's karyotype calls the line hypertetraploid,
+with 64 to 79 chromosomes per metaphase plus 38 to 63 unidentifiable marker chromosomes
+(Fang et al. 2021, Extended Data Fig. 5a), which does not reduce to a single ploidy to compare
+against.
+
+![HCC1395 copy number from the three calls](../benchmark/seqc2/figures/figure3_copy_number.png)
+
+*Figure 3. Total (blue) and minor (orange) copy number along the genome: the pipeline's FACETS,
+SEQC2's FACETS on the same library pair, and SEQC2's ASCAT on the same tumour library. The two
+FACETS runs are nearly indistinguishable; ASCAT sits about one copy higher across much of the
+genome.*
+
+| Comparison (autosomes, about 2.7 Gb shared) | Same total copy number | Same minor copy number | Same LOH call |
+|---|---|---|---|
+| Pipeline FACETS vs SEQC2 FACETS, same pair | 87.0% | 94.5% | 99.9% |
+| Pipeline FACETS vs SEQC2 ASCAT | 29.6% | 80.7% | 91.7% |
+| SEQC2 FACETS vs SEQC2 ASCAT | 29.0% | 80.3% | 92.5% |
+
+The pipeline agrees with SEQC2's FACETS run on LOH across 99.9% of the shared autosomes, and
+with ASCAT as closely as SEQC2's own FACETS does. Total copy number rarely matches ASCAT because
+ASCAT chose a higher ploidy (mean total copy number 3.84 against 3.32 for the pipeline); LOH
+calls do not depend on that choice and agree on 92%.
+
+Two regions SEQC2 describes are worth checking directly:
+
+- 17q, clonal copy-neutral LOH in the tumour (Fang et al. 2021): the pipeline calls 2 copies with
+  no minor allele over 39.8 Mb of 17q, as SEQC2's FACETS does (39.6 Mb); ASCAT calls 3 copies
+  with no minor allele.
+- 6p, 16q and X, where the normal line has one copy: FACETS takes the normal as two copies
+  everywhere, so on these arms the tumour/normal depth ratio is about twice what the same
+  tumour copy number would give, and with no heterozygous SNPs in the normal FACETS cannot
+  estimate minor copy number. Both FACETS runs report high total copy number on 6p and 16q (4 to
+  9) with no minor allele. Copy number on these arms is not usable for this pair; they are the
+  same arms the truth set leaves out.
 
 #### Limitations
 
@@ -198,6 +257,8 @@ and it is why these regions cannot be scored.
   its effect on the false positives here is untested.
 - SEQC2's VAFs come from pooled deep whole-genome sequencing of other libraries, not from this
   exome.
+- SEQC2's FACETS settings are not in its published tables, so the copy-number comparison cannot
+  separate differences in settings from differences in the pipeline's pileup and fitting.
 
 #### Reproducing the benchmark
 
@@ -208,31 +269,35 @@ references (`scripts/download_references.sh`, see [requirements](requirements.md
 benchmark/seqc2/download_seqc2.sh /data/seqc2
 ```
 
-Fill in the config and sample sheet, then run the somatic pipeline to the tumour-vs-normal
-calls (on a 10-core M1 Max, BQSR takes about 55 minutes per sample; the full calling stage, which
-also calls each sample against the reference, took 78 minutes):
+Fill in the config and sample sheet, then run the somatic pipeline to the tumour-vs-normal calls
+and the FACETS fit. On a 10-core M1 Max, BQSR took about 55 minutes per sample, the full calling
+stage (which also calls each sample against the reference) 78 minutes, and FACETS about 9. FACETS
+builds in its own conda environment, so the run needs `--use-conda` (and `--conda-frontend conda`
+where mamba is not installed):
 
 ```
 sed -e 's|<SEQC2_DIR>|/data/seqc2|' -e 's|<REFERENCE_DIR>|/data/references|' \
     -e 's|<OUTPUT_DIR>|/data/seqc2_run|' benchmark/seqc2/config_seqc2.yaml > config_seqc2.yaml
 sed 's|<SEQC2_DIR>|/data/seqc2|' benchmark/seqc2/bam_metadata.tsv > /data/seqc2/bam_metadata.tsv
 snakemake -s call_bam_GATK/call_bam_GATK.snakefile --configfile config_seqc2.yaml --cores 10 \
-    /data/seqc2_run/03_variants_TvN/01_gatk_variant_calling/filtered/HCC1395_Dx_filtered.vcf
+    --use-conda /data/seqc2_run/03_variants_TvN/01_gatk_variant_calling/filtered/HCC1395_Dx_filtered.vcf \
+    /data/seqc2_run/04_FACETS/HCC1395_Dx_purity.txt /data/seqc2_run/04_FACETS/HCC1395_Dx_cncf.tsv
 ```
 
-Score it (about 20 seconds), and optionally backtest the filter settings, in the pipeline
-environment:
+Score it (about 20 seconds), compare the copy number (a few seconds), and optionally backtest
+the filter settings, in the pipeline environment:
 
 ```
 REF=/data/references/Homo_sapiens_assembly38.fasta
 Rscript benchmark/seqc2/evaluate_seqc2.R /data/seqc2_run $REF /data/seqc2 seqc2_results
+Rscript benchmark/seqc2/compare_facets.R /data/seqc2_run /data/seqc2 seqc2_results/facets
 benchmark/seqc2/backtest_filters.sh /data/seqc2_run $REF /data/seqc2 seqc2_backtest
 ```
 
 A rerun can differ by a call or two at sites where more than 50 reads start at the same position
 (GATK downsamples those with a random sequence; see [Performance](somatic.md#performance)). The
 results of the run described here are in `benchmark/seqc2/results/` and printed at the end of
-each step in the two scripts.
+each step in the three scripts.
 
 #### References
 

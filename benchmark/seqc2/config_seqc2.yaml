@@ -4,8 +4,8 @@
 #       -e 's|<OUTPUT_DIR>|/data/seqc2_run|' benchmark/seqc2/config_seqc2.yaml > config_seqc2.yaml
 #   sed 's|<SEQC2_DIR>|/data/seqc2|' benchmark/seqc2/bam_metadata.tsv > /data/seqc2/bam_metadata.tsv
 # <SEQC2_DIR> is the directory benchmark/seqc2/download_seqc2.sh filled; <REFERENCE_DIR> is
-# the one scripts/download_references.sh filled. Only the somatic calls are needed, so
-# annotation, FACETS and the report are off; performance keys keep their defaults.
+# the one scripts/download_references.sh filled. Annotation and the report are off; FACETS is
+# on for the copy-number comparison; performance keys keep their defaults.
 project_name: "HCC1395 whole exome, SEQC2 (Illumina centre)"
 output_directory: "<OUTPUT_DIR>"
 bam_metadata: "<SEQC2_DIR>/bam_metadata.tsv"
@@ -13,7 +13,7 @@ annotation_only: False
 skip_bqsr: False
 skip_annotation: True
 call_tumor_normal: True
-run_facets: False
+run_facets: True
 filter_min_af: 0.02
 filter_min_dp: 5
 filter_GATK: ['PASS', 'normal_artifact']

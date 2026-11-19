@@ -7,6 +7,8 @@
 #     region the benchmark run uses (targets +/- 100 bp, primary chromosomes)
 #   - the SEQC2 somatic reference call set v1.2.1, high-confidence regions and the all-caller
 #     supersets (truth/)
+#   - SEQC2's own copy-number calls on the exomes (cnv/): FACETS segment tables for the 12
+#     exome replicates and ASCAT segments for this tumour library, under 1 MB
 # Source: https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/seqc/Somatic_Mutation_WG/
 # (Fang et al. 2021, Nat Biotechnol 39:1151; Xiao et al. 2021, Nat Biotechnol 39:1141).
 # Re-running skips files already downloaded.
@@ -60,6 +62,12 @@ for f in README.md High-Confidence_Regions_v1.2.bed \
          sSNV.MSDUKT.superSet.v1.2.vcf.gz sINDEL.MDKT.superSet.v1.2.vcf.gz; do
     get "$base/release/latest/$f" "truth/$f"
 done
+echo "==> SEQC2 copy-number calls"
+mkdir -p cnv/facets cnv/ascat
+for r in EA_1 FD_1 FD_2 FD_3 IL_1 IL_2 IL_3 LL_1 NC_1 NV_1 NV_2 NV_3; do
+    get "$base/analysis/CNVs/WES/facets/WES_${r}_fit_cncf.txt" "cnv/facets/WES_${r}_fit_cncf.txt"
+done
+get "$base/analysis/CNVs/WES/ascat/WES_IL_T_1.copynumber.caveman.csv" cnv/ascat/WES_IL_T_1.copynumber.caveman.csv
 for f in truth/*.vcf.gz; do
     [[ -s "$f.tbi" ]] || tabix -p vcf "$f"
 done

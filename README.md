@@ -68,8 +68,10 @@ The germline and read-processing pipelines have their own smoke tests on the sam
 
 On the SEQC2 HCC1395 tumour/normal exome, the somatic PASS calls score 99.1% precision and 90.3%
 recall for SNVs (78.8% and 85.4% for indels) against the SEQC2 somatic reference call set. Most of
-the missed SNVs are below 10% variant allele fraction. Method, results and the scripts to reproduce
-them: [manual/benchmark.md](manual/benchmark.md).
+the missed SNVs are below 10% variant allele fraction. FACETS on the same pair fits purity 0.948
+and ploidy 3.11 and matches SEQC2's own FACETS run on the LOH call across 99.9% of the shared
+autosomes. Method, results and the scripts to reproduce them:
+[manual/benchmark.md](manual/benchmark.md).
 
 ## User Manual
 1. [Installation requirements](manual/requirements.md)
