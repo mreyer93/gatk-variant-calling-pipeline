@@ -3,7 +3,7 @@
 # Variant calling germline NOT DONE in whole exome
 
 cd /home/ubuntu/ega_recall/
-export SENTIEON_LICENSE=/home/ubuntu/Formic_Labs_eval.lic
+export SENTIEON_LICENSE=/home/ubuntu/sentieon_eval.lic
 SENTIEON_INSTALL_DIR=/home/ubuntu/sentieon-genomics-202112.06
 NT=16
 

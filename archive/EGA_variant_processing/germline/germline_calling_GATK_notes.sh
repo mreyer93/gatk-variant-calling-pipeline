@@ -149,8 +149,6 @@ cat ../../sample_list.txt | xargs -I {} -P 16 sh -c "echo {}; gatk SelectVariant
 # depth of 5 in at least one normal sample
 # remove key column 
 # rounding on score new
-BOX passwords
-vNXQj53TiDFgaQU
 
 # HARDFILT manual filtration that I no longer do
 # gatk VariantFiltration  \

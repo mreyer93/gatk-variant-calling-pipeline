@@ -29,10 +29,10 @@ if (exists('snakemake')) {
 
 # testing arguments
 if(F){
-    vcf.input.f <- '/path/to/data/pipeline_test/ctp_101_test_output/03_variants_TvN/02_variant_annotations/annotate_Funcotator/001-002_Dx_filtered_fucnc.vcf'
-    cadd.input.f <- '/path/to/data/pipeline_test/ctp_101_test_output/03_variants_TvN/02_variant_annotations/annotate_CADD/simple_table/001-002_Dx_filtered_CADD_simple.vcf'
-    vcf.output.unfilt.f <- '/path/to/data/pipeline_test/ctp_101_test_output/03_variants_TvN/02_variant_annotations/annotations_combined/unfiltered/001-002_Dx_unfiltered_annotated.vcf'
-    vcf.output.filt.f <- '/path/to/data/pipeline_test/ctp_101_test_output/03_variants_TvN/02_variant_annotations/annotations_combined/filtered/001-002_Dx_filtered_annotated.vcf'
+    vcf.input.f <- '/path/to/data/pipeline_test/test_output/03_variants_TvN/02_variant_annotations/annotate_Funcotator/PATIENT_A_Dx_filtered_fucnc.vcf'
+    cadd.input.f <- '/path/to/data/pipeline_test/test_output/03_variants_TvN/02_variant_annotations/annotate_CADD/simple_table/PATIENT_A_Dx_filtered_CADD_simple.vcf'
+    vcf.output.unfilt.f <- '/path/to/data/pipeline_test/test_output/03_variants_TvN/02_variant_annotations/annotations_combined/unfiltered/PATIENT_A_Dx_unfiltered_annotated.vcf'
+    vcf.output.filt.f <- '/path/to/data/pipeline_test/test_output/03_variants_TvN/02_variant_annotations/annotations_combined/filtered/PATIENT_A_Dx_filtered_annotated.vcf'
     vaf.min <- 0.02
     depth.min <- 5
     keep.gatk.filters <- c('PASS', 'normal_artifact')

@@ -28,26 +28,10 @@ if (exists('snakemake')) {
 
 # testing arguments
 if(F){
-vcf.input.f <- '~/data/project_one/gatk_calling_bam/output/03_variants_TvN/annotate_Funcotator/001-103_Dx_filtered_fucnc.vcf'
-cadd.input.f <- '~/data/project_one/gatk_calling_bam/output/03_variants_TvN/annotate_CADD/simple_table/001-103_Dx_filtered_CADD_simple.vcf'
-vaf.min <- 0.02
-# test with EGA data
-vcf.input.f <- '~/local_data/EGA_data/02_variants_reference/annotate_Funcotator/PD4779a_filtered_fucnc.vcf'
-cadd.input.f <- '~/local_data/EGA_data/02_variants_reference/annotate_CADD/simple_table/PD4779a_filtered_CADD_simple.vcf'
-vaf.min <- 0.02
-depth.min <- 5
-# test with EGA WES data
-vcf.input.f <- '~/local_data/EGA_data/02_variants_reference_exome/annotate_Funcotator/PD4779b_filtered_fucnc.vcf.gz'
-cadd.input.f <- '~/local_data/EGA_data/02_variants_reference_exome/annotate_CADD/simple_table/PD4779b_filtered_CADD_simple.vcf.gz'
-vcf.output.unfilt.f <- '~/local_data/EGA_data/02_variants_reference_exome/annotations_combined/unfiltered/PD4779b_unfiltered_annotated.vcf'
-vcf.output.filt.f <- '~/local_data/EGA_data/02_variants_reference_exome/annotations_combined/filtered/PD4779b_filtered_annotated.vcf'
-vaf.min <- 0.02
-depth.min <- 5
-# test with EGA WES data
-vcf.input.f <- '~/local_data/academic_collaborations/George_Ben_Ria_Exchange/EGA_data/02_variants_reference_exome/annotate_Funcotator/PD6567b_filtered_fucnc.vcf.gz'
-cadd.input.f <- '~/local_data/academic_collaborations/George_Ben_Ria_Exchange/EGA_data/02_variants_reference_exome/annotate_CADD/simple_table/PD6567b_filtered_CADD_simple.vcf.gz'
-vcf.output.unfilt.f <- '~/local_data/EGA_data/02_variants_reference_exome/annotations_combined/unfiltered/PD6567b_unfiltered_annotated.vcf'
-vcf.output.filt.f <- '~/local_data/EGA_data/02_variants_reference_exome/annotations_combined/filtered/PD6567b_filtered_annotated.vcf'
+vcf.input.f <- '/path/to/output/02_variants_reference/02_variant_annotations/annotate_Funcotator/SAMPLE_A_filtered_func.vcf'
+cadd.input.f <- '/path/to/output/02_variants_reference/02_variant_annotations/annotate_CADD/simple_table/SAMPLE_A_filtered_CADD_simple.vcf'
+vcf.output.unfilt.f <- '/path/to/output/02_variants_reference/02_variant_annotations/annotations_combined/unfiltered/SAMPLE_A_unfiltered_annotated.vcf'
+vcf.output.filt.f <- '/path/to/output/02_variants_reference/02_variant_annotations/annotations_combined/filtered/SAMPLE_A_filtered_annotated.vcf'
 vaf.min <- 0.02
 depth.min <- 5
 }

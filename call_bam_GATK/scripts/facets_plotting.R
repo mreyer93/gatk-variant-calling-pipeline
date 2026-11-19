@@ -1,9 +1,9 @@
-# running factes for the first time on the sample from 001-101
+# running factes for the first time on the sample
 # facets is installed by rule facets_build into its own library rather than the conda env
 .libPaths(c(snakemake@input[['rlib']], .libPaths()))
 library(facets)
 # testing args
-# inf <- '~/local_data/data_store/ctp_102_calling/output/04_FACETS/001-103_Dx.csv.gz'
+# inf <- '/path/to/output/04_FACETS/PATIENT_A_Dx.csv.gz'
 # outf <- '~/facets_test.pdf'
 
 inf <- snakemake@input[['csv']]

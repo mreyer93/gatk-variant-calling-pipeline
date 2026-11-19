@@ -17,31 +17,9 @@ keep.gtak.filters <- snakemake@params[['filter_GATK']]
 # TESTING ARGS
 # temp processing outside of snakemake
 if(F){
-    # EGA data stuff
-    metadata.f <- '~/local_data/EGA_data/bam_metadata_uniq_samp.tsv'
-    annot_combined_dir <- '~/local_data/EGA_data/02_variants_reference/annotations_combined/'
-    outdir.base <- '~/local_data/EGA_data/02_variants_reference/new_scores/'
-    filter.min.cadd <- 20
-    filter.min.af <- 0.02
-    filter.min.dp <- 5
-    # EGA data EXOME
-    metadata.f <- '~/local_data/EGA_data/bam_metadata_uniq_samp.tsv'
-    annot_combined_dir <- '~/local_data/EGA_data/02_variants_reference_exome/annotations_combined/'
-    outdir.base <- '~/local_data/EGA_data/02_variants_reference_exome/new_scores/'
-    filter.min.cadd <- 20
-    filter.min.af <- 0.02
-    filter.min.dp <- 5
-    # CTP-102
-    metadata.f <- '~/local_data/data_store/ctp_102_calling/metadata.tsv'
-    annot_combined_dir <- '~/local_data/data_store/ctp_102_calling/output/02_variants_reference/annotations_combined/'
-    outdir.base <- '~/local_data/data_store/ctp_102_calling/output/02_variants_reference/new_scores/'
-    filter.min.cadd <- 20
-    filter.min.af <- 0.02
-    filter.min.dp <- 5
-    # CTP-101
-    metadata.f <- '~/local_data/data_store/ctp_101_calling/bam_metadata_all.tsv'
-    annot_combined_dir <- '~/local_data/data_store/ctp_101_calling/output/02_variants_reference/annotations_combined/'
-    outdir.base <- '~/local_data/data_store/ctp_101_calling/output/02_variants_reference/new_scores/'
+    metadata.f <- '/path/to/bam_metadata.tsv'
+    annot_combined_dir <- '/path/to/output/02_variants_reference/02_variant_annotations/annotations_combined/'
+    outdir.base <- '/path/to/output/02_variants_reference/03_variant_new_scores/prescore/'
     filter.min.cadd <- 20
     filter.min.af <- 0.02
     filter.min.dp <- 5

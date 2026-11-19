@@ -137,7 +137,7 @@ gseaplot(em_H, 'HALLMARK_IL6_JAK_STAT3_SIGNALING', title = 'HALLMARK_IL6_JAK_STA
 
 
 # 2021-06-16
-# Make RNA-Seq figure for Ria
+# Make RNA-Seq figure
 # bar graph with NES score, for C3
 #  - I want to highlight PU1/ETS
 #  - It is the top hit even though PU1 itself is not downregulated or upregulated by LSD1i treatment

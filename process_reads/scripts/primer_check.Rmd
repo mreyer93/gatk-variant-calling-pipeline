@@ -27,13 +27,13 @@ options(stringsAsFactors = FALSE)
 testing <- F
 if(testing){
     # this pipeline actually just starts with sample reads
-    sample.reads.f <- '~/data/project_one/sample_reads.tsv'
+    sample.reads.f <- '/path/to/data/project_one/sample_reads.tsv'
     # targets file with the probes
-    targets.w0.f <- '~/data/references/AML_261_IDT_GRCh38/xgen_aml_probes.bed'
-    # targets.old <- read.table('~/data/references/AML_261_IDT/targets_hg19.st.bed', sep='\t', header=F, quote='', col.names = c('chr', 'start', 'end', 'strand', 'exon'))
+    targets.w0.f <- '/path/to/data/references/AML_261_IDT_GRCh38/xgen_aml_probes.bed'
+    # targets.old <- read.table('/path/to/data/references/AML_261_IDT/targets_hg19.st.bed', sep='\t', header=F, quote='', col.names = c('chr', 'start', 'end', 'strand', 'exon'))
     # targets.old$length <- targets.old$end - targets.old$start
     outdir.server <- '/path/to/data/project_one/output'
-    outdir <- '~/data/project_one/output'
+    outdir <- '/path/to/data/project_one/output'
 } else {
     # set directories
     outdir <- snakemake@params[["outdir"]]

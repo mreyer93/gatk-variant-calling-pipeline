@@ -13,20 +13,10 @@ keep.gtak.filters <- snakemake@params[['filter_GATK']]
 
 # TESTING ARGS
 if(F){
-    # CTP DATA
-    trial <- 'ctp_102'
-    metadata.f <- paste0('~/local_data/data_store/', trial, '_calling/bam_metadata.tsv')
-    indir.base <- paste0('~/local_data/data_store/', trial, '_calling/output/02_variants_reference/new_scores/filtered')
-    indir.vcf <- paste0('~/local_data/data_store/', trial, '_calling/output/02_variants_reference/new_scores/computed_vcfs')
-    outdir.base <- paste0('~/local_data/data_store/', trial, '_calling/output/02_variants_reference/REDO_new_scores/')
-    filter.min.cadd <- 20
-    filter.min.af <- 0.02
-    filter.min.dp <- 5
-    # EGA data EXOME
-    metadata.f <- '~/local_data/EGA_data/bam_metadata_uniq_samp.tsv'
-    indir.base <- '~/local_data/EGA_data/02_variants_reference_exome/new_scores/filtered'
-    indir.vcf <- '~/local_data/EGA_data/02_variants_reference_exome/new_scores/computed_vcfs'
-    outdir.base <- '~/local_data/EGA_data/02_variants_reference_exome/REDO_new_scores/'
+    metadata.f <- '/path/to/bam_metadata.tsv'
+    indir.base <- '/path/to/output/02_variants_reference/03_variant_new_scores/prescore/filtered'
+    indir.vcf <- '/path/to/output/02_variants_reference/03_variant_new_scores/prescore/computed_vcfs'
+    outdir.base <- '/path/to/output/02_variants_reference/03_variant_new_scores/final/'
     filter.min.cadd <- 20
     filter.min.af <- 0.02
     filter.min.dp <- 5

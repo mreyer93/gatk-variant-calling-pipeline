@@ -1,4 +1,4 @@
-# get the gene set information for Ria that she asked for
+# get the gene set information
 
 # Can you pull for me the log-fold change and q-values
 # for the genes included in the different gene sets

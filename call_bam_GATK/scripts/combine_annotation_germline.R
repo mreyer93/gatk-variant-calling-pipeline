@@ -27,10 +27,10 @@ if (exists('snakemake')) {
 
 # testing arguments
 if(F){
-    # multi-sample test with germline data from CTP_201
-    vcf.input.f <- '~/data/CTP_201_SF3B1/07_joint_vcf/02_variant_annotations/funcotator.vcf'
-    cadd.input.f <- '~/data/CTP_201_SF3B1/07_joint_vcf/02_variant_annotations/CADD_simple_table.vcf'
-    vcf.output.f <- '~/data/CTP_201_SF3B1/07_joint_vcf/02_variant_annotations/annotations_combined.vcf'
+    # multi-sample test with germline data
+    vcf.input.f <- '/path/to/output/07_joint_vcf/02_variant_annotations/funcotator.vcf'
+    cadd.input.f <- '/path/to/output/07_joint_vcf/02_variant_annotations/CADD_simple_table.vcf'
+    vcf.output.f <- '/path/to/output/07_joint_vcf/02_variant_annotations/annotations_combined.vcf'
     depth.min <- 5
 }
 
