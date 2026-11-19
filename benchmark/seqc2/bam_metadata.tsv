@@ -1,0 +1,3 @@
+sample	bamfile	patient	timepoint	tumor_normal	library	platform	platform_unit
+TUMOUR	<SEQC2_DIR>/WES_IL_T_1.bwa.dedup.bam	HCC1395	Dx	T	WES_IL_T_1	ILLUMINA	WES_IL_T_1
+NORMAL	<SEQC2_DIR>/WES_IL_N_1.bwa.dedup.bam	HCC1395	Dx	N	WES_IL_N_1	ILLUMINA	WES_IL_N_1

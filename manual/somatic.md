@@ -12,6 +12,11 @@ The somatic variant calling is the best developed section of this pipeline, and 
 7. Variants in the "tumor vs reference" set are scored to bring the most relevant variants to the top of the list. 
 8. Calling large copy number alterations and loss of heterozygosity events with the [FACETS](https://github.com/mskcc/facets/) algorithm.
 
+It departs from GATK's published Mutect2 workflow in two places: Mutect2 runs without a panel of
+normals, and FilterMutectCalls does not receive the tumour segmentation from
+CalculateContamination (leaving it out scored better on a real tumour/normal exome). Accuracy on the
+SEQC2 HCC1395 exome, and the test of that choice, are in [benchmark.md](benchmark.md).
+
 #### Configure the pipeline
 Copy `call_bam_GATK/config_call_bam_GATK.yaml` to your working directory and change the parameters to fit your run. The `bam_metadata` file gives all the input files and annotations. This must be a tab-delimited file with the following column headings:
 

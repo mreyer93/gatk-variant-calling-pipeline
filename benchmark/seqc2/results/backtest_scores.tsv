@@ -1,0 +1,13 @@
+filtering	region	type	calls	TP	FP	FN	precision	recall	F1
+as_run	eval	SNV	1056	1047	9	112	0.991	0.903	0.945
+segmentation	eval	SNV	1021	1015	6	144	0.994	0.876	0.931
+no_contamination	eval	SNV	1115	1081	34	78	0.97	0.933	0.951
+as_run	eval	indel	52	41	11	7	0.788	0.854	0.82
+segmentation	eval	indel	50	40	10	8	0.8	0.833	0.816
+no_contamination	eval	indel	58	42	16	6	0.724	0.875	0.792
+as_run	eval_w100	SNV	1427	1402	25	264	0.982	0.842	0.907
+segmentation	eval_w100	SNV	1378	1363	15	303	0.989	0.818	0.896
+no_contamination	eval_w100	SNV	1485	1437	48	229	0.968	0.863	0.912
+as_run	eval_w100	indel	67	54	13	18	0.806	0.75	0.777
+segmentation	eval_w100	indel	64	53	11	19	0.828	0.736	0.779
+no_contamination	eval_w100	indel	77	57	20	15	0.74	0.792	0.765

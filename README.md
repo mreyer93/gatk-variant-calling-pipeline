@@ -64,18 +64,27 @@ The germline and read-processing pipelines have their own smoke tests on the sam
 ./test/run_test_processing.sh
 ```
 
+## Accuracy
+
+On the SEQC2 HCC1395 tumour/normal exome, the somatic PASS calls score 99.1% precision and 90.3%
+recall for SNVs (78.8% and 85.4% for indels) against the SEQC2 somatic reference call set. Most of
+the missed SNVs are below 10% variant allele fraction. Method, results and the scripts to reproduce
+them: [manual/benchmark.md](manual/benchmark.md).
+
 ## User Manual
 1. [Installation requirements](manual/requirements.md)
 2. [Sequence read QC and alignment](manual/processing.md)
 3. [Somatic variant calling with GATK](manual/somatic.md)
 4. [Germline variant calling with GATK](manual/germline.md)
 5. [Other things in this repository](manual/other.md)
+6. [Somatic accuracy on the SEQC2 HCC1395 exome](manual/benchmark.md)
 
 ## Repository layout
 - `call_bam_GATK/` - somatic and germline variant-calling pipelines (the main pipelines here)
 - `process_reads/` - read QC, trimming, and alignment pipeline
 - `envs/` - conda/mamba environment definitions
 - `manual/` - detailed docs for each pipeline stage
+- `benchmark/` - accuracy benchmarks against published truth sets (SEQC2 somatic)
 - `cloud/gcp/` - scripts to run the full pipeline on a GCP VM (see [cloud/gcp/README.md](cloud/gcp/README.md))
 - `archive/` - historical, project-specific analyses and superseded code, kept for reference only
   (not maintained, not guaranteed to run) - see [archive/README.md](archive/README.md)
